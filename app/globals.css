@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-slate-50 text-navy-900 antialiased;
+  }
+  ::selection {
+    @apply bg-clinical-200 text-navy-900;
+  }
+}
+
+@layer components {
+  .field-label {
+    @apply mb-1.5 block text-[13px] font-medium tracking-wide text-navy-700;
+  }
+
+  .field-hint {
+    @apply mt-1.5 text-xs text-navy-300;
+  }
+
+  .field-error {
+    @apply mt-1.5 flex items-center gap-1 text-xs font-medium text-rose-600;
+  }
+
+  .divider-label {
+    @apply flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-navy-300 before:h-px before:flex-1 before:bg-slate-200 after:h-px after:flex-1 after:bg-slate-200;
+  }
+}
+
+@layer utilities {
+  .focus-ring {
+    @apply outline-none ring-0 focus-visible:ring-2 focus-visible:ring-clinical-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white;
+  }
+}
