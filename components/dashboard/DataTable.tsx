@@ -1,6 +1,7 @@
 "use client";
 
 import { UserPlus } from "lucide-react";
+import Link from "next/link";
 import Button from "@/components/Button";
 import { staffOverview } from "@/lib/data";
 
@@ -14,9 +15,11 @@ export default function DataTable() {
           <h3 className="font-display text-base font-semibold text-navy">Staff Overview</h3>
           <p className="text-xs text-navy/40">Active staff by role</p>
         </div>
-        <Button icon={UserPlus} variant="primary" className="text-xs px-3 py-2">
-          Create Staff Account
-        </Button>
+        <Link href="/dashboard/create-staff">
+          <Button icon={UserPlus} variant="primary" className="text-xs px-3 py-2">
+            Create Staff Account
+          </Button>
+        </Link>
       </div>
 
       <table className="w-full text-left text-sm">

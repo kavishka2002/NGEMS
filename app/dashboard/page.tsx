@@ -5,6 +5,8 @@ import ProfileCard from "@/components/dashboard/ProfileCard";
 import DataTable from "@/components/dashboard/DataTable";
 import ActivityStrip from "@/components/dashboard/ActivityStrip";
 import QuickActions from "@/components/dashboard/QuickActions";
+import Button from "@/components/Button";
+import Link from "next/link";
 import {
   PatientTrendChart,
   MonthlyAdmissionsChart,
@@ -36,7 +38,11 @@ export default function DashboardPage() {
                   </p>
                 </div>
                 <div className="mt-4 md:mt-0">
-                  {/* Placeholder for quick controls or summary badges */}
+                  <Link href="/dashboard/create-staff">
+                    <Button type="button" variant="primary" className="w-auto px-4 py-2 text-sm">
+                      Create Staff Account
+                    </Button>
+                  </Link>
                 </div>
               </div>
             </div>
