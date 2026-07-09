@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Logo from "@/components/Logo";
@@ -15,6 +16,7 @@ type FormState = {
 };
 
 export default function LoginPage() {
+  const router = useRouter();
   const [form, setForm] = useState<FormState>({ hospitalId: "", username: "", password: "" });
   const [remember, setRemember] = useState(false);
   const [errors, setErrors] = useState<Partial<FormState>>({});
@@ -36,16 +38,10 @@ export default function LoginPage() {
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     setFormError(null);
-    if (!validate()) return;
-
     setSubmitting(true);
-    // UI-only demo: simulate an auth check and surface a sample error state.
-    setTimeout(() => {
-      setSubmitting(false);
-      setFormError(
-        "We couldn't verify these credentials. Check your Hospital ID, username, and password, then try again."
-      );
-    }, 900);
+
+    // Demo flow: navigate directly to the dashboard.
+    router.push("/dashboard");
   };
 
   return (
