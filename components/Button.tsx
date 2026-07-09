@@ -1,12 +1,13 @@
 "use client";
 
-import { ButtonHTMLAttributes, ReactNode } from "react";
+import { ButtonHTMLAttributes, ElementType, ReactNode } from "react";
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   children: ReactNode;
   variant?: "primary" | "secondary" | "ghost";
   loading?: boolean;
   fullWidth?: boolean;
+  icon?: ElementType;
 };
 
 export default function Button({
@@ -16,6 +17,7 @@ export default function Button({
   fullWidth = true,
   disabled,
   className = "",
+  icon: Icon,
   ...props
 }: ButtonProps) {
   const base =
@@ -55,6 +57,9 @@ export default function Button({
             d="M4 12a8 8 0 018-8v3.2a4.8 4.8 0 00-4.8 4.8H4z"
           />
         </svg>
+      )}
+      {!loading && Icon && (
+        <Icon size={16} className="text-current" />
       )}
       {loading ? "Processing…" : children}
     </button>
