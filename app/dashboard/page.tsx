@@ -15,22 +15,31 @@ import { overviewStats } from "@/lib/data";
 
 export default function DashboardPage() {
   return (
-    <div className="min-h-screen bg-slate-bg">
+    <div className="flex h-screen flex-col overflow-hidden" style={{backgroundColor: "#F0F4F8"}}>
       <DashboardNavbar />
-      <div className="flex">
+      <div className="flex flex-1 min-h-0 overflow-hidden">
         <Sidebar />
 
-        <main className="min-w-0 flex-1 px-4 py-6 md:px-6 lg:px-8">
-          <div className="mb-6 flex flex-col gap-1">
-            <p className="text-xs font-medium uppercase tracking-[0.12em] text-clinical-600">
-              Hospital Administration
-            </p>
-            <h1 className="font-display text-2xl font-semibold text-navy md:text-[28px]">
-              Dashboard Overview
-            </h1>
-            <p className="text-sm text-navy/50">
-              A summary of staff, patients, and daily activity across the hospital.
-            </p>
+        <main className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-4 py-6 md:px-6 lg:px-8">
+          <div className="mb-6">
+            <div className="max-w-7xl w-full mx-auto rounded-lg bg-white/60 px-4 py-6 shadow-sm md:px-6 lg:px-8">
+              <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-amber-600">
+                    Hospital Administration
+                  </p>
+                  <h1 className="mt-1 font-display text-3xl font-bold leading-tight text-[#0B2545]">
+                    Dashboard Overview
+                  </h1>
+                  <p className="mt-1 text-sm text-[#146C94]">
+                    A summary of staff, patients, and daily activity across the hospital.
+                  </p>
+                </div>
+                <div className="mt-4 md:mt-0">
+                  {/* Placeholder for quick controls or summary badges */}
+                </div>
+              </div>
+            </div>
           </div>
 
           <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:gap-4 xl:grid-cols-6">

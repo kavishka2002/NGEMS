@@ -8,10 +8,10 @@ export default function Navbar() {
   const pathname = usePathname();
 
   const linkClass = (href: string) =>
-    `focus-ring rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+    `focus-ring rounded-md px-3 py-2 text-sm font-medium transition-colors duration-200 ${
       pathname === href
-        ? "text-white"
-        : "text-white/60 hover:text-white/90"
+        ? "text-white bg-white/10"
+        : "text-white hover:bg-white/5"
     }`;
 
   return (
