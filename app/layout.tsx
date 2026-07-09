@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Fraunces, Inter, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
+import "../lib/firebase";
 
 const fraunces = Fraunces({
   subsets: ["latin"],
