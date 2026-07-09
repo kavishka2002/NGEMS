@@ -27,6 +27,9 @@ export default function Navbar() {
           <Link href="/login" className={linkClass("/login")}>
             Hospital Login
           </Link>
+          <Link href="/staff-login" className={linkClass("/staff-login")}>
+            Staff Login
+          </Link>
           <span className="ml-3 hidden items-center gap-1.5 rounded-full border border-seal-400/40 bg-seal-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-seal-200 sm:flex">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
               <path d="M12 2 20 6v6c0 5-3.6 8.6-8 10-4.4-1.4-8-5-8-10V6l8-4Z" stroke="currentColor" strokeWidth="1.8" />
