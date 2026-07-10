@@ -8,10 +8,10 @@ export default function Navbar() {
   const pathname = usePathname();
 
   const linkClass = (href: string) =>
-    `focus-ring rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+    `focus-ring rounded-md px-3 py-2 text-sm font-medium transition-colors duration-200 ${
       pathname === href
-        ? "text-white"
-        : "text-white/60 hover:text-white/90"
+        ? "text-white bg-white/10"
+        : "text-white hover:bg-white/5"
     }`;
 
   return (
@@ -26,6 +26,9 @@ export default function Navbar() {
           </Link>
           <Link href="/login" className={linkClass("/login")}>
             Hospital Login
+          </Link>
+          <Link href="/staff-login" className={linkClass("/staff-login")}>
+            Staff Login
           </Link>
           <span className="ml-3 hidden items-center gap-1.5 rounded-full border border-seal-400/40 bg-seal-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-seal-200 sm:flex">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none">

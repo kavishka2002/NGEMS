@@ -5,7 +5,6 @@ import ProfileCard from "@/components/dashboard/ProfileCard";
 import DataTable from "@/components/dashboard/DataTable";
 import ActivityStrip from "@/components/dashboard/ActivityStrip";
 import QuickActions from "@/components/dashboard/QuickActions";
-import Button from "@/components/Button";
 import Link from "next/link";
 import {
   PatientTrendChart,
@@ -15,9 +14,9 @@ import {
 } from "@/components/dashboard/ChartCard";
 import { overviewStats } from "@/lib/data";
 
-export default function DashboardPage() {
+export default function ReceptionDashboardPage() {
   return (
-    <div className="flex h-screen flex-col overflow-hidden" style={{backgroundColor: "#F0F4F8"}}>
+    <div className="flex h-screen flex-col overflow-hidden" style={{ backgroundColor: "#F0F4F8" }}>
       <DashboardNavbar />
       <div className="flex flex-1 min-h-0 overflow-hidden">
         <Sidebar />
@@ -28,20 +27,20 @@ export default function DashboardPage() {
               <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wider text-amber-600">
-                    Hospital Administration
+                    Reception Dashboard
                   </p>
                   <h1 className="mt-1 font-display text-3xl font-bold leading-tight text-[#0B2545]">
-                    Dashboard Overview
+                    Patient Intake & Appointments
                   </h1>
                   <p className="mt-1 text-sm text-[#146C94]">
-                    A summary of staff, patients, and daily activity across the hospital.
+                    Monitor waiting patients, appointment scheduling, and reception activity.
                   </p>
                 </div>
                 <div className="mt-4 md:mt-0">
                   <Link href="/dashboard/create-staff">
-                    <Button type="button" variant="primary" className="w-auto px-4 py-2 text-sm">
+                    <button type="button" className="inline-flex items-center justify-center rounded-full bg-clinical-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-clinical-700">
                       Create Staff Account
-                    </Button>
+                    </button>
                   </Link>
                 </div>
               </div>
