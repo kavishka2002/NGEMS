@@ -5,6 +5,7 @@ import Link from "next/link";
 import DashboardNavbar from "@/components/dashboard/DashboardNavbar";
 import Sidebar from "@/components/dashboard/Sidebar";
 import {
+  AlertCircle,
   Bell,
   Briefcase,
   Building2,

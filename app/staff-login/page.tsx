@@ -44,7 +44,7 @@ export default function StaffLoginPage() {
       return;
     }
 
-    router.push("/dashboard");
+    router.push("/dashboard/reception");
   };
 
   return (
@@ -79,9 +79,9 @@ export default function StaffLoginPage() {
               </div>
               <div>
                 <h1 className="font-display text-xl font-semibold text-navy-900">
-                  Staff Login
+                  Reception Staff Login
                 </h1>
-                <p className="text-xs text-navy-300">Sign in with your staff credentials to access hospital systems.</p>
+                <p className="text-xs text-navy-300">Sign in with your reception credentials to access patient intake and appointments.</p>
               </div>
             </div>
 
