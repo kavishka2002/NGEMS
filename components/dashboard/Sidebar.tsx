@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import clsx from "clsx";
+import Link from "next/link";
 import {
   LayoutDashboard,
   Building2,
@@ -74,12 +75,8 @@ export default function Sidebar() {
                   const isActive = active === item.name;
                   return (
                     <li key={item.name}>
-                      <a
+                      <Link
                         href={item.href}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          setActive(item.name);
-                        }}
                         className={clsx(
                           "group flex items-center justify-center gap-2.5 rounded-md px-2 py-2 text-sm transition-colors md:justify-start md:px-2.5",
                           isActive
@@ -87,6 +84,7 @@ export default function Sidebar() {
                             : "text-navy/70 hover:bg-slate-bg hover:text-navy",
                           section.label === "Staff Management" && "md:ml-2"
                         )}
+                        onClick={() => setActive(item.name)}
                       >
                         <Icon
                           size={16}
@@ -97,7 +95,7 @@ export default function Sidebar() {
                         />
                         <span className="hidden md:inline">{item.name}</span>
                         {isActive && <span className="ml-auto hidden h-1.5 w-1.5 rounded-full bg-seal-600 md:block" />}
-                      </a>
+                      </Link>
                     </li>
                   );
                 })}
