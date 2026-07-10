@@ -15,10 +15,9 @@ type FormState = {
   password: string;
 };
 
-export default function LoginPage() {
+export default function StaffLoginPage() {
   const router = useRouter();
   const [form, setForm] = useState<FormState>({ hospitalId: "", username: "", password: "" });
-  const [remember, setRemember] = useState(false);
   const [errors, setErrors] = useState<Partial<FormState>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -40,8 +39,12 @@ export default function LoginPage() {
     setFormError(null);
     setSubmitting(true);
 
-    // Demo flow: navigate directly to the dashboard.
-    router.push("/dashboard");
+    if (!validate()) {
+      setSubmitting(false);
+      return;
+    }
+
+    router.push("/dashboard/reception");
   };
 
   return (
@@ -76,9 +79,9 @@ export default function LoginPage() {
               </div>
               <div>
                 <h1 className="font-display text-xl font-semibold text-navy-900">
-                  Hospital Login
+                  Reception Staff Login
                 </h1>
-                <p className="text-xs text-navy-300">Sign in with your registered facility credentials</p>
+                <p className="text-xs text-navy-300">Sign in with your reception credentials to access patient intake and appointments.</p>
               </div>
             </div>
 
@@ -111,7 +114,7 @@ export default function LoginPage() {
               <Input
                 label="Username"
                 name="username"
-                placeholder="Enter your admin username"
+                placeholder="Enter your staff username"
                 required
                 value={form.username}
                 onChange={update("username")}
@@ -134,45 +137,21 @@ export default function LoginPage() {
               />
 
               <div className="flex items-center justify-between pt-1 text-sm">
-                <label className="flex cursor-pointer items-center gap-2 text-navy-600">
-                  <input
-                    type="checkbox"
-                    checked={remember}
-                    onChange={(e) => setRemember(e.target.checked)}
-                    className="focus-ring h-4 w-4 rounded border-slate-300 text-clinical-500 accent-clinical-500"
-                  />
-                  Remember me
-                </label>
-                <Link href="#" className="font-medium text-clinical-600 hover:underline">
-                  Forgot password?
+                <Link href="/login" className="font-medium text-clinical-600 hover:underline">
+                  Back to Hospital Login
                 </Link>
               </div>
 
               <div className="pt-2">
                 <Button type="submit" loading={submitting}>
-                  Login
+                  Staff Login
                 </Button>
               </div>
             </form>
-
-            <div className="mt-6 space-y-3 text-center text-sm text-navy-300">
-              <p>
-                New hospital?{" "}
-                <Link href="/register" className="font-medium text-clinical-600 hover:underline">
-                  Register your facility
-                </Link>
-              </p>
-              <p>
-                Staff member?{" "}
-                <Link href="/staff-login" className="font-medium text-clinical-600 hover:underline">
-                  Sign in here
-                </Link>
-              </p>
-            </div>
           </div>
 
           <p className="mt-6 text-center text-xs text-navy-300">
-            Protected government system. Unauthorized access is prohibited and monitored.
+            Staff accounts are managed by your hospital administration.
           </p>
         </div>
       </main>
