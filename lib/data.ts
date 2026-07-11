@@ -93,12 +93,12 @@ export const sidebarSections = [
   {
     label: "Operations",
     items: [
-      { name: "Departments", icon: "Building", href: "#" },
-      { name: "Patients", icon: "Users", href: "#" },
-      { name: "Appointments", icon: "CalendarCheck", href: "#" },
-      { name: "Admissions", icon: "BedDouble", href: "#" },
-      { name: "Pharmacy", icon: "Pill", href: "#" },
-      { name: "Laboratory", icon: "FlaskConical", href: "#" },
+      { name: "Departments", icon: "Building", href: "/dashboard/departments" },
+      { name: "Patients", icon: "Users", href: "/dashboard/patients" },
+      { name: "Appointments", icon: "CalendarCheck", href: "/dashboard/appointments" },
+      { name: "Admissions", icon: "BedDouble", href: "/dashboard/admissions" },
+      { name: "Pharmacy", icon: "Pill", href: "/pharmacy/dashboard" },
+      { name: "Laboratory", icon: "FlaskConical", href: "/laboratory/dashboard" },
     ],
   },
   {
