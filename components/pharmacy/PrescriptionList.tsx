@@ -88,20 +88,20 @@ export default function PrescriptionList() {
           >
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-2">
-                <p className="font-semibold text-navy">{prescription.patientName}</p>
+                <p className="font-semibold text-blue-900">{prescription.patientName}</p>
                 <span className={clsx("inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border", getStatusColor(prescription.status))}>
                   {getStatusIcon(prescription.status)}
                   {prescription.status.charAt(0).toUpperCase() + prescription.status.slice(1)}
                 </span>
               </div>
-              <p className="text-sm text-navy/60">
+              <p className="text-sm text-slate-600">
                 ID: {prescription.patientId} | Dr. {prescription.doctorName}
               </p>
             </div>
             <ChevronDown
               size={20}
               className={clsx(
-                "text-navy/40 transition-transform",
+                "text-slate-400 transition-transform",
                 expanded === prescription.id ? "rotate-180" : ""
               )}
             />

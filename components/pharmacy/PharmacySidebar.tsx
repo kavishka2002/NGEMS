@@ -43,11 +43,11 @@ export default function PharmacySidebar() {
   const [active, setActive] = useState("Dashboard");
 
   return (
-    <aside className="sticky top-0 z-20 flex h-[calc(100vh-70px)] w-20 shrink-0 flex-col border-r border-slate-border bg-white md:w-64 overflow-y-auto">
+    <aside className="sticky top-0 z-20 flex h-[calc(100vh-70px)] w-20 shrink-0 flex-col border-r border-slate-200 bg-white md:w-64 overflow-y-auto">
       <nav className="flex flex-col gap-6 px-2 py-5 md:px-4">
         {sections.map((section) => (
           <div key={section.label}>
-            <p className="mb-3 px-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-navy/40">
+            <p className="mb-3 px-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-400">
               <span className="hidden md:inline">{section.label}</span>
               <span className="md:hidden">•</span>
             </p>
@@ -62,8 +62,8 @@ export default function PharmacySidebar() {
                       className={clsx(
                         "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
                         isActive
-                          ? "bg-health-50 text-health-600"
-                          : "text-navy/60 hover:bg-slate-50 hover:text-navy"
+                          ? "bg-blue-50 text-blue-600"
+                          : "text-slate-600 hover:bg-slate-50 hover:text-blue-600"
                       )}
                     >
                       <item.icon size={18} strokeWidth={1.5} />
