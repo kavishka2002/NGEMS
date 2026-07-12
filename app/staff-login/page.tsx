@@ -8,6 +8,8 @@ import Logo from "@/components/Logo";
 import Input from "@/components/Input";
 import PasswordInput from "@/components/PasswordInput";
 import Button from "@/components/Button";
+import DemoAccountsInfo from "@/components/DemoAccountsInfo";
+import { validateDemoAccount } from "@/lib/demo-accounts";
 
 type FormState = {
   hospitalId: string;
@@ -44,7 +46,28 @@ export default function StaffLoginPage() {
       return;
     }
 
-    router.push("/dashboard/reception");
+    // Validate demo account
+    const validation = validateDemoAccount(
+      form.hospitalId,
+      form.username,
+      form.password
+    );
+
+    if (validation.valid) {
+      // Route based on username/role
+      if (form.username === "reception") {
+        router.push("/dashboard/reception");
+      } else if (form.username === "pharmacy") {
+        router.push("/pharmacy/dashboard");
+      } else if (form.username === "laboratory") {
+        router.push("/laboratory");
+      } else {
+        router.push("/dashboard");
+      }
+    } else {
+      setFormError("Invalid credentials. Please use a demo account from the list below.");
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -148,6 +171,8 @@ export default function StaffLoginPage() {
                 </Button>
               </div>
             </form>
+
+            <DemoAccountsInfo />
           </div>
 
           <p className="mt-6 text-center text-xs text-navy-300">
