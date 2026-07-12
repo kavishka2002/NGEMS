@@ -2,10 +2,10 @@ import { Pill, Package, AlertCircle, CheckCircle2, TrendingUp, type LucideIcon }
 import clsx from "clsx";
 
 const accentMap: Record<string, { bg: string; text: string; gradient: string }> = {
-  prescriptions: { bg: "bg-health-50", text: "text-health-600", gradient: "from-health-600 to-emerald-600" },
-  dispensing: { bg: "bg-seal-50", text: "text-seal-600", gradient: "from-seal-600 to-blue-600" },
-  inventory: { bg: "bg-clinical-50", text: "text-clinical-600", gradient: "from-clinical-600 to-health-600" },
-  stock: { bg: "bg-amber-50", text: "text-amber-600", gradient: "from-amber-600 to-orange-600" },
+  prescriptions: { bg: "bg-blue-50", text: "text-blue-600", gradient: "from-blue-600 to-blue-700" },
+  dispensing: { bg: "bg-emerald-50", text: "text-emerald-600", gradient: "from-emerald-600 to-green-600" },
+  inventory: { bg: "bg-amber-50", text: "text-amber-600", gradient: "from-amber-600 to-orange-600" },
+  stock: { bg: "bg-red-50", text: "text-red-600", gradient: "from-red-600 to-rose-600" },
   completed: { bg: "bg-green-50", text: "text-green-600", gradient: "from-green-600 to-emerald-600" },
 };
 
@@ -45,9 +45,9 @@ export default function PharmacyCard({
             </div>
           )}
         </div>
-        <p className="mt-5 font-display text-3xl font-bold bg-gradient-to-r from-navy to-navy/70 bg-clip-text text-transparent">{value}</p>
-        <p className="mt-1 text-sm font-semibold text-navy/70">{label}</p>
-        {description && <p className="mt-3 text-xs text-navy/50 leading-relaxed">{description}</p>}
+        <p className="mt-5 font-display text-3xl font-bold bg-gradient-to-r from-blue-900 to-blue-700 bg-clip-text text-transparent">{value}</p>
+        <p className="mt-1 text-sm font-semibold text-slate-700">{label}</p>
+        {description && <p className="mt-3 text-xs text-slate-600 leading-relaxed">{description}</p>}
       </div>
     </div>
   );
