@@ -9,7 +9,7 @@ import {
   ClipboardCheck,
   ListOrdered,
 } from "lucide-react";
-import DashboardTopbar from "@/components/dashboard/DashboardTopbar";
+import DashboardNavbar from "@/components/dashboard/DashboardNavbar";
 import StaffInfoCard from "@/components/reception/StaffInfoCard";
 import StatCard from "@/components/reception/StatCard";
 import QuickActions from "@/components/reception/QuickActions";
@@ -78,15 +78,10 @@ export default function ReceptionDashboardPage() {
   };
 
   return (
-    <>
-      <DashboardTopbar
-        breadcrumb={["Dashboard", "Reception"]}
-        userName="Kasun Perera"
-        userRole="Reception Staff"
-        userIcon={UserRound}
-      />
+    <div className="min-h-screen bg-[#F0F4F8]">
+      <DashboardNavbar userName="Kasun Perera" userRole="Reception Staff" />
 
-      <main className="px-4 py-8 sm:px-6 lg:px-8">
+      <main className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-4 py-8 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl space-y-6">
           <div>
             <h1 className="font-display text-2xl font-semibold text-navy-900 sm:text-[26px]">
@@ -165,6 +160,6 @@ export default function ReceptionDashboardPage() {
           )}
         </div>
       </main>
-    </>
+    </div>
   );
 }
