@@ -160,6 +160,6 @@ export default function ReceptionDashboardPage() {
           )}
         </div>
       </main>
-    </>
+    </div>
   );
 }
