@@ -9,7 +9,6 @@ import Input from "@/components/Input";
 import PasswordInput from "@/components/PasswordInput";
 import Button from "@/components/Button";
 import DemoAccountsInfo from "@/components/DemoAccountsInfo";
-import { validateDemoAccount } from "@/lib/demo-accounts";
 
 type FormState = {
   hospitalId: string;
@@ -37,7 +36,7 @@ export default function LoginPage() {
     return Object.keys(next).length === 0;
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setFormError(null);
     setSubmitting(true);
@@ -47,15 +46,25 @@ export default function LoginPage() {
       return;
     }
 
-    // Validate demo account
-    const validation = validateDemoAccount(
-      form.hospitalId,
-      form.username,
-      form.password
-    );
+    try {
+      const response = await fetch("/api/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          hospitalId: form.hospitalId,
+          username: form.username,
+          password: form.password,
+        }),
+      });
 
-    if (validation.valid) {
-      // Route based on username/role
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Invalid credentials.");
+      }
+
       if (form.username === "reception") {
         router.push("/dashboard/reception");
       } else if (form.username === "pharmacy") {
@@ -65,8 +74,8 @@ export default function LoginPage() {
       } else {
         router.push("/dashboard");
       }
-    } else {
-      setFormError("Invalid credentials. Please use a demo account from the list below.");
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : "Unable to sign in.");
       setSubmitting(false);
     }
   };
