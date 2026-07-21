@@ -1,4 +1,4 @@
-# Node
+# Node.js
 node_modules/
 npm-debug.log*
 yarn-debug.log*
@@ -11,7 +11,7 @@ out/
 build/
 dist/
 
-# Environment files
+# Environment Variables
 .env
 .env.local
 .env.*.local
@@ -24,12 +24,13 @@ dist/
 .vscode/
 .idea/
 
-# Dependency locks (optional to ignore)
+# Dependency Locks
+# Keep these files tracked for consistent installs
 # package-lock.json
 # yarn.lock
 # pnpm-lock.yaml
 
-# Coverage and caches
+# Coverage and Caches
 coverage/
 .turbo/
 .parcel-cache/
@@ -38,4 +39,6 @@ coverage/
 
 # Vercel
 .vercel/
-.ngems-62de5-firebase-adminsdk-fbsvc-338326775c.json
+
+# Firebase Service Account Credentials
+ngems-62de5-firebase-adminsdk-fbsvc-338326775c.json
