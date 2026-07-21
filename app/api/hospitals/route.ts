@@ -26,39 +26,57 @@ if (!getApps().length) {
   }
 }
 
-const firestore = getFirestore();
+let firestore: ReturnType<typeof getFirestore> | null = null;
 const localHospitals: Array<Record<string, unknown>> = [];
+
+if (getApps().length) {
+  try {
+    firestore = getFirestore();
+  } catch (err) {
+    console.error("Failed to initialize Firestore despite firebase app existing:", err);
+    firestore = null;
+  }
+} else {
+  console.warn("Firebase admin not initialized; Firestore unavailable — using local fallback.");
+}
 
 function parseRequestBody(request: Request) {
   return (async (): Promise<Record<string, unknown>> => {
     const contentType = request.headers.get("content-type") ?? "";
-    const body: Record<string, unknown> = {};
 
-    if (contentType.includes("application/json")) {
-      try {
-        const parsed = await request.json();
-        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-          return parsed as Record<string, unknown>;
-        }
-      } catch {
-        // fall back to text parsing if json() fails
-      }
+    if (contentType.includes("multipart/form-data")) {
+      const formData = await request.formData();
+      return Object.fromEntries(formData.entries()) as Record<string, unknown>;
     }
 
     const text = await request.text();
-    if (text) {
+    if (!text) return {};
+
+    try {
+      const parsed = JSON.parse(text);
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        return parsed as Record<string, unknown>;
+      }
+    } catch (e) {
       try {
-        const parsed = JSON.parse(text);
-        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-          return parsed as Record<string, unknown>;
+        let candidate = text
+          .replace(/([,{]\s*)([A-Za-z0-9_]+)\s*:/g, '$1"$2":')
+          .replace(/:\s*([^\",\[{\]\d\-\s][^,}\]]*)(?=[,}])/g, ':"$1"');
+        const parsed2 = JSON.parse(candidate);
+        if (parsed2 && typeof parsed2 === "object" && !Array.isArray(parsed2)) {
+          return parsed2 as Record<string, unknown>;
         }
-      } catch {
+      } catch (e2) {
+        // fall through to urlencoded parse
+      }
+
+      try {
         return Object.fromEntries(new URLSearchParams(text)) as Record<string, unknown>;
+      } catch (e2) {
+        return {};
       }
     }
-
-    const formData = await request.formData();
-    return Object.fromEntries(formData.entries()) as Record<string, unknown>;
+    return {};
   })();
 }
 
