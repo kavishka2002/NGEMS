@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import InfoPanel from "@/components/InfoPanel";
@@ -8,7 +8,6 @@ import FormCard from "@/components/FormCard";
 import Input from "@/components/Input";
 import Select from "@/components/Select";
 import PasswordInput from "@/components/PasswordInput";
-import FileUpload from "@/components/FileUpload";
 import HospitalIdField from "@/components/HospitalIdField";
 import Button from "@/components/Button";
 import SuccessModal from "@/components/SuccessModal";
@@ -58,6 +57,9 @@ type FormState = {
   adminUsername: string;
   password: string;
   confirmPassword: string;
+  bedCapacity: string;
+  specialtyServices: string;
+  additionalNotes: string;
 };
 
 const initialState: FormState = {
@@ -72,6 +74,9 @@ const initialState: FormState = {
   adminUsername: "",
   password: "",
   confirmPassword: "",
+  bedCapacity: "",
+  specialtyServices: "",
+  additionalNotes: "",
 };
 
 function generateHospitalId() {
@@ -81,11 +86,16 @@ function generateHospitalId() {
 }
 
 export default function RegisterPage() {
-  const hospitalId = useMemo(() => generateHospitalId(), []);
+  const [hospitalId, setHospitalId] = useState("");
   const [form, setForm] = useState<FormState>(initialState);
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
   const [submitting, setSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+
+  useEffect(() => {
+    setHospitalId(generateHospitalId());
+  }, []);
 
   const update = (key: keyof FormState) => (e: any) =>
     setForm((f) => ({ ...f, [key]: e.target.value }));
@@ -135,16 +145,56 @@ export default function RegisterPage() {
     return Object.keys(next).length === 0;
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
 
     setSubmitting(true);
-    // UI-only demo: simulate a submission delay before showing confirmation.
-    setTimeout(() => {
-      setSubmitting(false);
+    setSubmitError("");
+
+    const generatedHospitalId = hospitalId || generateHospitalId();
+    const payload = {
+      hospitalId: generatedHospitalId,
+      hospitalName: form.hospitalName.trim(),
+      hospitalType: form.hospitalType,
+      province: form.province,
+      district: form.district,
+      address: form.address.trim(),
+      contactNumber: form.contactNumber.trim(),
+      email: form.email.trim(),
+      adminName: form.adminName.trim(),
+      adminUsername: form.adminUsername.trim(),
+      password: form.password,
+      bedCapacity: form.bedCapacity.trim(),
+      specialtyServices: form.specialtyServices.trim(),
+      additionalNotes: form.additionalNotes.trim(),
+      createdAt: new Date().toISOString(),
+    };
+
+    try {
+      const response = await fetch("/api/hospitals", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.error || "Unable to save hospital registration.");
+      }
+
+      setHospitalId(generatedHospitalId);
       setShowSuccess(true);
-    }, 900);
+      setForm(initialState);
+      setErrors({});
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : "Unable to save hospital registration.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -316,11 +366,46 @@ export default function RegisterPage() {
               </section>
 
               <section className="space-y-5">
-                <p className="divider-label">Upload</p>
-                <FileUpload />
+                <p className="divider-label">Additional Facility Details</p>
+
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <Input
+                    label="Bed Capacity"
+                    name="bedCapacity"
+                    placeholder="e.g. 450 beds"
+                    value={form.bedCapacity}
+                    onChange={update("bedCapacity")}
+                  />
+
+                  <Input
+                    label="Specialty Services"
+                    name="specialtyServices"
+                    placeholder="e.g. ICU, Emergency, Cardiology"
+                    value={form.specialtyServices}
+                    onChange={update("specialtyServices")}
+                  />
+
+                  <div className="sm:col-span-2">
+                    <label htmlFor="additionalNotes" className="field-label">
+                      Additional Notes
+                    </label>
+                    <textarea
+                      id="additionalNotes"
+                      name="additionalNotes"
+                      rows={4}
+                      placeholder="Add any extra facility information, accreditation, or onboarding notes"
+                      value={form.additionalNotes}
+                      onChange={update("additionalNotes") as any}
+                      className="w-full rounded-lg border border-slate-200 bg-white px-3.5 py-3 text-sm text-navy-700 outline-none transition focus:border-clinical-400 focus:ring-2 focus:ring-clinical-100"
+                    />
+                  </div>
+                </div>
               </section>
 
               <div className="pt-1">
+                {submitError ? (
+                  <p className="mb-3 text-sm font-medium text-red-600">{submitError}</p>
+                ) : null}
                 <Button type="submit" loading={submitting}>
                   Register Hospital
                 </Button>
