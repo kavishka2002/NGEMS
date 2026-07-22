@@ -7,6 +7,7 @@ import { getAuth } from "firebase-admin/auth";
 import { getStorage } from "firebase-admin/storage";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 const serviceAccountPath =
     process.env.FIREBASE_SERVICE_ACCOUNT_PATH ||
@@ -292,7 +293,7 @@ export async function POST(request: NextRequest) {
 // GET endpoint to fetch staff members
 export async function GET(request: NextRequest) {
     try {
-        const { searchParams } = new URL(request.url);
+        const { searchParams } = request.nextUrl;
         const hospitalId = searchParams.get("hospitalId");
         const role = searchParams.get("role");
 
