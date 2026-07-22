@@ -172,6 +172,11 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        const normalizedPhotoUrl =
+            photoUrl && photoUrl !== "none" && photoUrl !== "null" && photoUrl !== "undefined"
+                ? photoUrl
+                : null;
+
         // Create authentication user
         let uid: string;
         try {
@@ -179,7 +184,7 @@ export async function POST(request: NextRequest) {
                 email: data.email as string,
                 password: data.password as string,
                 displayName: data.fullName as string,
-                photoURL: photoUrl || undefined,
+                photoURL: normalizedPhotoUrl || undefined,
             });
             uid = userRecord.uid;
         } catch (authError: any) {
@@ -216,7 +221,7 @@ export async function POST(request: NextRequest) {
             employmentType: data.employmentType,
             username: data.username,
             status: data.status || "Active",
-            photoUrl: photoUrl || null,
+            photoUrl: normalizedPhotoUrl,
             createdAt: now,
             updatedAt: now,
             createdBy: data.createdBy || "admin",

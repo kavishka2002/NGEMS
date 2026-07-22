@@ -18,6 +18,7 @@ import {
   FileBarChart2,
   Settings,
   ChevronDown,
+  UserPlus,
   type LucideIcon,
 } from "lucide-react";
 import { sidebarSections } from "@/lib/data";
@@ -36,6 +37,7 @@ const iconMap: Record<string, LucideIcon> = {
   BedDouble,
   FileBarChart2,
   Settings,
+  UserPlus,
 };
 
 export default function Sidebar() {

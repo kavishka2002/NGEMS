@@ -83,11 +83,13 @@ export const sidebarSections = [
   {
     label: "Staff Management",
     items: [
-      { name: "Doctors", icon: "Stethoscope", href: "#" },
-      { name: "Nurses", icon: "HeartPulse", href: "#" },
-      { name: "Pharmacy Staff", icon: "Pill", href: "#" },
-      { name: "Laboratory Staff", icon: "FlaskConical", href: "#" },
-      { name: "Reception Staff", icon: "UserRound", href: "#" },
+      { name: "Create Staff", icon: "UserPlus", href: "/dashboard/create-staff" },
+      { name: "All Staff", icon: "Users", href: "/dashboard/staff" },
+      { name: "Doctors", icon: "Stethoscope", href: "/dashboard/staff/doctors" },
+      { name: "Nurses", icon: "HeartPulse", href: "/dashboard/staff/nurses" },
+      { name: "Pharmacy Staff", icon: "Pill", href: "/dashboard/staff/pharmacy-staff" },
+      { name: "Laboratory Staff", icon: "FlaskConical", href: "/dashboard/staff/laboratory-staff" },
+      { name: "Reception Staff", icon: "UserRound", href: "/dashboard/staff/reception-staff" },
     ],
   },
   {

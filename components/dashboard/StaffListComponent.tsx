@@ -18,14 +18,15 @@ import { getStaffList, deactivateStaffAccount, reactivateStaffAccount } from "@/
 interface StaffListProps {
     hospitalId: string;
     onEditStaff?: (staff: StaffAccount) => void;
+    roleFilter?: string;
 }
 
-export default function StaffListComponent({ hospitalId, onEditStaff }: StaffListProps) {
+export default function StaffListComponent({ hospitalId, onEditStaff, roleFilter }: StaffListProps) {
     const [staff, setStaff] = useState<StaffAccount[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
-    const [roleFilter, setRoleFilter] = useState<string>("all");
+    const [selectedRoleFilter, setSelectedRoleFilter] = useState<string>(roleFilter ? "custom" : "all");
     const [statusFilter, setStatusFilter] = useState<string>("all");
     const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
@@ -74,7 +75,8 @@ export default function StaffListComponent({ hospitalId, onEditStaff }: StaffLis
             member.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
             member.employeeId.toLowerCase().includes(searchTerm.toLowerCase());
 
-        const matchesRole = roleFilter === "all" || member.role === roleFilter;
+        const activeRoleFilter = roleFilter || selectedRoleFilter;
+        const matchesRole = activeRoleFilter === "all" && activeRoleFilter !== "custom" ? true : member.role === activeRoleFilter;
         const matchesStatus = statusFilter === "all" || member.status === statusFilter;
 
         return matchesSearch && matchesRole && matchesStatus;
@@ -109,17 +111,19 @@ export default function StaffListComponent({ hospitalId, onEditStaff }: StaffLis
                     />
                 </div>
 
-                <select
-                    value={roleFilter}
-                    onChange={(e) => setRoleFilter(e.target.value)}
-                    className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm focus:border-clinical-500 focus:outline-none"
-                >
-                    {roles.map((role) => (
-                        <option key={role} value={role}>
-                            {role === "all" ? "All Roles" : role}
-                        </option>
-                    ))}
-                </select>
+                {!roleFilter && (
+                    <select
+                        value={selectedRoleFilter}
+                        onChange={(e) => setSelectedRoleFilter(e.target.value)}
+                        className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm focus:border-clinical-500 focus:outline-none"
+                    >
+                        {roles.map((role) => (
+                            <option key={role} value={role}>
+                                {role === "all" ? "All Roles" : role}
+                            </option>
+                        ))}
+                    </select>
+                )}
 
                 <select
                     value={statusFilter}
@@ -160,7 +164,7 @@ export default function StaffListComponent({ hospitalId, onEditStaff }: StaffLis
                                 <tr key={member.id} className="hover:bg-slate-50">
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-3">
-                                            {member.photoUrl ? (
+                                            {member.photoUrl && member.photoUrl !== "none" && member.photoUrl !== "null" ? (
                                                 <img
                                                     src={member.photoUrl}
                                                     alt={member.fullName}
