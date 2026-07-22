@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import { NextResponse } from "next/server";
 import { getFirestoreClient } from "@/lib/firebaseAdmin";
 
@@ -46,12 +45,13 @@ export async function GET(request: Request) {
     const hospitalId = normalizeString(url.searchParams.get("hospitalId"));
     const query = normalizeString(url.searchParams.get("query"));
     const searchBy = normalizeString(url.searchParams.get("searchBy")).toLowerCase();
+    const search = normalizeString(url.searchParams.get("search")).toLowerCase();
 
-    if (!hospitalId || !query) {
+    if (!hospitalId) {
       return NextResponse.json(
         {
           success: false,
-          error: "hospitalId and query are required.",
+          error: "hospitalId is required.",
         },
         { status: 400 }
       );
@@ -59,6 +59,29 @@ export async function GET(request: Request) {
 
     const firestore = getFirestoreClient();
     const patientsRef = firestore.collection("patients");
+
+    if (!query) {
+      const snapshot = await patientsRef
+        .where("hospitalId", "==", hospitalId)
+        .orderBy("createdAt", "desc")
+        .limit(200)
+        .get();
+
+      const patients = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      const filteredPatients = search
+        ? patients.filter((item) => JSON.stringify(item).toLowerCase().includes(search))
+        : patients;
+
+      return NextResponse.json({
+        success: true,
+        data: filteredPatients,
+      });
+    }
+
     const normalizedQuery = query.trim();
     const normalizedPhone = normalizePhone(normalizedQuery);
 
@@ -82,14 +105,14 @@ export async function GET(request: Request) {
       }
     }
 
-    for (const search of searchFields) {
-      if (!search.value) {
+    for (const searchItem of searchFields) {
+      if (!searchItem.value) {
         continue;
       }
 
       snapshot = await patientsRef
         .where("hospitalId", "==", hospitalId)
-        .where(search.field, "==", search.value)
+        .where(searchItem.field, "==", searchItem.value)
         .limit(1)
         .get();
 
@@ -253,14 +276,17 @@ export async function POST(request: Request) {
       updatedAt: now,
     });
 
-    return NextResponse.json({
-      success: true,
-      patientId,
-      patient: {
-        id: patientDoc.id,
-        ...patientRecord,
+    return NextResponse.json(
+      {
+        success: true,
+        patientId,
+        patient: {
+          id: patientDoc.id,
+          ...patientRecord,
+        },
       },
-    }, { status: 201 });
+      { status: 201 }
+    );
   } catch (error) {
     console.error("Patient registration failed:", error);
     return NextResponse.json(
@@ -271,66 +297,4 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
-=======
-import { NextResponse, type NextRequest } from "next/server";
-import { getFirestoreClient } from "@/lib/firebaseAdmin";
-
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
-
-export async function GET(request: NextRequest) {
-    try {
-        const { searchParams } = request.nextUrl;
-        const hospitalId = searchParams.get("hospitalId")?.trim();
-        const search = searchParams.get("search")?.trim().toLowerCase() || "";
-
-        if (!hospitalId) {
-            return NextResponse.json({ error: "Hospital ID is required." }, { status: 400 });
-        }
-
-        const firestore = getFirestoreClient();
-        const snapshot = await firestore.collection("patients").where("hospitalId", "==", hospitalId).get();
-
-        const patients = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-        const filtered = search
-            ? patients.filter((item) => JSON.stringify(item).toLowerCase().includes(search))
-            : patients;
-
-        return NextResponse.json({ success: true, data: filtered });
-    } catch (error) {
-        console.error("Error fetching patients:", error);
-        return NextResponse.json({ error: "Failed to fetch patients." }, { status: 500 });
-    }
-}
-
-export async function POST(request: NextRequest) {
-    try {
-        const body = await request.json();
-        const hospitalId = (body.hospitalId as string)?.trim();
-        const fullName = (body.fullName as string)?.trim();
-
-        if (!hospitalId || !fullName) {
-            return NextResponse.json({ error: "Hospital ID and patient name are required." }, { status: 400 });
-        }
-
-        const firestore = getFirestoreClient();
-        const patient = {
-            hospitalId,
-            fullName,
-            patientId: (body.patientId as string)?.trim() || `PT-${Date.now()}`,
-            email: (body.email as string)?.trim() || "",
-            phone: (body.phone as string)?.trim() || "",
-            ward: (body.ward as string)?.trim() || "",
-            status: (body.status as string) || "Active",
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-        };
-
-        const docRef = await firestore.collection("patients").add(patient);
-        return NextResponse.json({ success: true, data: { id: docRef.id, ...patient } }, { status: 201 });
-    } catch (error) {
-        console.error("Error creating patient:", error);
-        return NextResponse.json({ error: "Failed to create patient." }, { status: 500 });
-    }
->>>>>>> fc3d115b2da47bbea4603520a544cf0033d65d3f
 }

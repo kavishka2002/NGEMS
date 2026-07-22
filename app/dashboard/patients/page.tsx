@@ -36,7 +36,7 @@ export default function PatientsPage() {
   const filteredPatients = useMemo(
     () =>
       patients.filter((item) =>
-        [item.fullName, item.patientId, item.email, item.phone]
+        [item.name, item.patientId, item.email, item.mobile]
           .filter(Boolean)
           .some((value) => value.toLowerCase().includes(searchTerm.toLowerCase()))
       ),
@@ -100,10 +100,10 @@ export default function PatientsPage() {
                   <tbody className="divide-y divide-slate-200">
                     {filteredPatients.map((patient) => (
                       <tr key={patient.id} className="hover:bg-slate-50">
-                        <td className="px-4 py-4 font-medium text-slate-900">{patient.fullName || "Unknown"}</td>
+                        <td className="px-4 py-4 font-medium text-slate-900">{patient.name || "Unknown"}</td>
                         <td className="px-4 py-4 text-slate-600">{patient.patientId || "—"}</td>
-                        <td className="px-4 py-4 text-slate-600">{patient.phone || "—"}</td>
-                        <td className="px-4 py-4 text-slate-600">{patient.ward || "—"}</td>
+                        <td className="px-4 py-4 text-slate-600">{patient.mobile || "—"}</td>
+                        <td className="px-4 py-4 text-slate-600">{patient.department || patient.ward || "—"}</td>
                         <td className="px-4 py-4 text-slate-600">{patient.status || "Active"}</td>
                       </tr>
                     ))}

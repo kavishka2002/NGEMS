@@ -107,7 +107,7 @@ export default function AppointmentsPage() {
                         <td className="px-4 py-4 text-slate-600">{appointment.appointmentId || "—"}</td>
                         <td className="px-4 py-4 text-slate-600">{appointment.doctor || "—"}</td>
                         <td className="px-4 py-4 text-slate-600">{appointment.department || "—"}</td>
-                        <td className="px-4 py-4 text-slate-600">{appointment.time || "—"}</td>
+                        <td className="px-4 py-4 text-slate-600">{appointment.scheduledAt || appointment.time || "—"}</td>
                       </tr>
                     ))}
                   </tbody>

@@ -5,12 +5,11 @@ import { Search, X, ScanSearch } from "lucide-react";
 import Select from "@/components/Select";
 import Input from "@/components/Input";
 import Button from "@/components/Button";
-import { PatientRecord } from "@/lib/reception-data";
 
 const SEARCH_BY_OPTIONS = ["Patient ID", "NIC Number", "Passport Number", "Mobile Number"];
 
 type PatientSearchCardProps = {
-  onResult: (record: PatientRecord | null, searched: boolean) => void;
+  onResult: (record: Record<string, unknown> | null, searched: boolean) => void;
 };
 
 export default function PatientSearchCard({ onResult }: PatientSearchCardProps) {
@@ -112,8 +111,7 @@ export default function PatientSearchCard({ onResult }: PatientSearchCardProps) 
         </div>
 
         <p className="text-[11px] text-navy-300">
-          Demo tip: try NIC <span className="font-mono">982345671V</span> or ID{" "}
-          <span className="font-mono">PAT-02114</span> to see a matched record.
+          Search patients using an ID, NIC, passport or mobile number.
         </p>
       </div>
     </div>
