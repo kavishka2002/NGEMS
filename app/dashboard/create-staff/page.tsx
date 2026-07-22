@@ -4,6 +4,7 @@ import { ChangeEvent, FormEvent, useMemo, useState } from "react";
 import Link from "next/link";
 import DashboardNavbar from "@/components/dashboard/DashboardNavbar";
 import Sidebar from "@/components/dashboard/Sidebar";
+import { createStaffAccount, convertFileToBase64 } from "@/lib/staff-service";
 import {
   AlertCircle,
   Bell,
@@ -16,6 +17,7 @@ import {
   EyeOff,
   Image,
   Lock,
+  Loader,
   Mail,
   Phone,
   RotateCcw,
@@ -108,9 +110,8 @@ type StaffFormState = typeof initialFormState;
 type FieldErrors = Partial<Record<keyof StaffFormState, string>>;
 
 function fieldClass(error?: string) {
-  return `focus-ring w-full rounded-lg border bg-white py-2.5 px-3.5 text-sm text-navy-900 placeholder:text-navy-300/70 transition-colors duration-150 ${
-    error ? "border-rose-300 focus-visible:ring-rose-300" : "border-slate-200 hover:border-slate-300"
-  }`;
+  return `focus-ring w-full rounded-lg border bg-white py-2.5 px-3.5 text-sm text-navy-900 placeholder:text-navy-300/70 transition-colors duration-150 ${error ? "border-rose-300 focus-visible:ring-rose-300" : "border-slate-200 hover:border-slate-300"
+    }`;
 }
 
 export default function CreateStaffPage() {
@@ -121,6 +122,8 @@ export default function CreateStaffPage() {
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [successOpen, setSuccessOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
 
   const employeeId = useMemo(() => {
     const meta = ROLE_META[form.role];
@@ -194,10 +197,50 @@ export default function CreateStaffPage() {
     return Object.keys(next).length === 0;
   };
 
-  const handleSubmit = (event: FormEvent) => {
+  const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     if (!validate()) return;
-    setSuccessOpen(true);
+
+    // Ensure employeeId is valid
+    if (employeeId === "Select a role to generate" || !employeeId) {
+      setApiError("Please select a valid role to generate an Employee ID.");
+      return;
+    }
+
+    setIsLoading(true);
+    setApiError(null);
+
+    try {
+      // Convert photo to base64 if exists
+      let photoBase64 = "";
+      if (photoFile) {
+        photoBase64 = await convertFileToBase64(photoFile);
+      }
+
+      const payload = {
+        ...form,
+        employeeId, // Add the calculated employee ID
+        hospitalId: "HOS-0001", // This should come from context/session
+        hospitalName: "National Hospital Colombo",
+        photoBase64,
+        createdBy: "Admin User", // This should come from authenticated user
+      };
+
+      const response = await createStaffAccount(payload);
+
+      if (!response.success) {
+        setApiError(response.error || "Failed to create staff account. Please try again.");
+        setIsLoading(false);
+        return;
+      }
+
+      setSuccessOpen(true);
+      setIsLoading(false);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred";
+      setApiError(errorMessage);
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -218,6 +261,21 @@ export default function CreateStaffPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="grid gap-6 lg:grid-cols-3">
+              {apiError && (
+                <div className="lg:col-span-3 rounded-lg border border-rose-200 bg-rose-50 p-4 flex items-start gap-3">
+                  <AlertCircle size={18} className="mt-0.5 text-rose-600 flex-shrink-0" />
+                  <div>
+                    <h3 className="font-semibold text-rose-900">Error</h3>
+                    <p className="text-sm text-rose-700 mt-1">{apiError}</p>
+                  </div>
+                  <button
+                    onClick={() => setApiError(null)}
+                    className="ml-auto text-rose-600 hover:text-rose-700"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              )}
               <div className="space-y-6 lg:col-span-2">
                 <section className="rounded-2xl border border-slate-150 bg-white p-6 shadow-card">
                   <div className="mb-6 flex items-start gap-3">
@@ -814,22 +872,31 @@ export default function CreateStaffPage() {
                   <button
                     type="button"
                     onClick={resetForm}
-                    className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-6 py-3 text-sm font-semibold text-navy-700 transition hover:bg-slate-50"
+                    disabled={isLoading}
+                    className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-6 py-3 text-sm font-semibold text-navy-700 transition hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <RotateCcw size={15} /> Reset
                   </button>
                   <button
                     type="button"
                     onClick={() => resetForm()}
-                    className="inline-flex items-center justify-center rounded-lg bg-transparent px-6 py-3 text-sm font-semibold text-navy-700 transition hover:bg-slate-50"
+                    disabled={isLoading}
+                    className="inline-flex items-center justify-center rounded-lg bg-transparent px-6 py-3 text-sm font-semibold text-navy-700 transition hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="inline-flex items-center justify-center rounded-lg bg-navy-900 px-8 py-3 text-sm font-semibold text-white transition hover:bg-navy-800"
+                    disabled={isLoading}
+                    className="inline-flex items-center justify-center gap-2 rounded-lg bg-navy-900 px-8 py-3 text-sm font-semibold text-white transition hover:bg-navy-800 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Create Staff Account
+                    {isLoading ? (
+                      <>
+                        <Loader size={15} className="animate-spin" /> Creating...
+                      </>
+                    ) : (
+                      "Create Staff Account"
+                    )}
                   </button>
                 </div>
               </div>
