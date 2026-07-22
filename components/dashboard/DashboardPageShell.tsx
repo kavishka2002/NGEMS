@@ -23,6 +23,14 @@ const SESSION_KEY = "ngemsHospitalSession";
 type HospitalSession = {
   hospitalId?: string;
   hospitalName?: string;
+  hospitalType?: string;
+  province?: string;
+  district?: string;
+  address?: string;
+  contactNumber?: string;
+  email?: string;
+  status?: string;
+  registeredOn?: string;
   username?: string;
   role?: string;
 };
@@ -62,14 +70,15 @@ export default function DashboardPageShell() {
     const loadedSession = loadSession();
     setSession(loadedSession);
 
-    if (!loadedSession?.hospitalId) {
+    const hospitalId = loadedSession?.hospitalId;
+    if (!hospitalId) {
       setLoadingHospital(false);
       return;
     }
 
     const fetchHospital = async () => {
       try {
-        const response = await fetch(`/api/hospitals?hospitalId=${encodeURIComponent(loadedSession.hospitalId)}`);
+        const response = await fetch(`/api/hospitals?hospitalId=${encodeURIComponent(hospitalId)}`);
         const data = await response.json();
         if (response.ok && data.success) {
           setHospital(data.hospital);
@@ -88,9 +97,7 @@ export default function DashboardPageShell() {
     hospitalId: hospital?.hospitalId || session?.hospitalId || "NGEMS-HOS-2026-000000",
     hospitalName:
       hospital?.hospitalName ||
-      hospital?.name ||
       session?.hospitalName ||
-      session?.name ||
       "Your hospital",
     hospitalType: hospital?.hospitalType || session?.hospitalType || "",
     province: hospital?.province || session?.province || "",

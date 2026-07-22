@@ -173,7 +173,7 @@ export default function StaffListComponent({ hospitalId, onEditStaff, roleFilter
             member.employeeId.toLowerCase().includes(searchTerm.toLowerCase());
 
         const activeRoleFilter = roleFilter || selectedRoleFilter;
-        const matchesRole = activeRoleFilter === "all" && activeRoleFilter !== "custom" ? true : member.role === activeRoleFilter;
+        const matchesRole = activeRoleFilter === "all" ? true : member.role === activeRoleFilter;
         const matchesStatus = statusFilter === "all" || member.status === statusFilter;
 
         return matchesSearch && matchesRole && matchesStatus;
@@ -307,9 +307,10 @@ export default function StaffListComponent({ hospitalId, onEditStaff, roleFilter
                                     <td className="px-6 py-4">
                                         <div className="relative flex items-center justify-center">
                                             <button
-                                                onClick={() =>
-                                                    setOpenMenuId(openMenuId === member.id ? null : member.id)
-                                                }
+                                                onClick={() => {
+                                                    const memberId = member.id ?? null;
+                                                    setOpenMenuId(openMenuId === memberId ? null : memberId);
+                                                }}
                                                 className="rounded-full p-2 hover:bg-slate-100"
                                             >
                                                 <MoreVertical size={16} className="text-slate-600" />

@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import clsx from "clsx";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Building2,
@@ -41,8 +42,24 @@ const iconMap: Record<string, LucideIcon> = {
 };
 
 export default function Sidebar() {
-  const [active, setActive] = useState("Dashboard");
+  const pathname = usePathname() || "/";
   const [openSection, setOpenSection] = useState("Staff Management");
+
+  const activeItemName = useMemo(() => {
+    const matched = sidebarSections
+      .flatMap((section) => section.items)
+      .find((item) => item.href !== "#" && pathname.startsWith(item.href));
+    return matched?.name ?? "Dashboard";
+  }, [pathname]);
+
+  useEffect(() => {
+    const activeSection = sidebarSections.find((section) =>
+      section.items.some((item) => item.name === activeItemName)
+    );
+    if (activeSection) {
+      setOpenSection(activeSection.label);
+    }
+  }, [activeItemName]);
 
   return (
     <aside className="sticky top-0 z-20 flex h-full w-20 shrink-0 flex-col border-r border-slate-border bg-white md:w-64">
@@ -56,25 +73,18 @@ export default function Sidebar() {
               >
                 <span className="hidden md:inline">{section.label}</span>
                 <span className="md:hidden">•</span>
-                {section.label === "Staff Management" && (
-                  <ChevronDown
-                    size={13}
-                    className={clsx(
-                      "hidden transition-transform duration-150 md:block",
-                      openSection === section.label ? "rotate-180" : ""
-                    )}
-                  />
-                )}
+                <ChevronDown
+                  size={13}
+                  className={clsx(
+                    "hidden transition-transform duration-150 md:block",
+                    openSection === section.label ? "rotate-180" : ""
+                  )}
+                />
               </button>
-              <ul
-                className={clsx(
-                  "flex flex-col gap-0.5",
-                  section.label === "Staff Management" && openSection !== section.label && "hidden"
-                )}
-              >
+              <ul className={clsx("flex flex-col gap-0.5", openSection !== section.label && "hidden")}>
                 {section.items.map((item) => {
                   const Icon = iconMap[item.icon];
-                  const isActive = active === item.name;
+                  const isActive = activeItemName === item.name;
                   return (
                     <li key={item.name}>
                       <Link
@@ -86,7 +96,6 @@ export default function Sidebar() {
                             : "text-navy/70 hover:bg-slate-bg hover:text-navy",
                           section.label === "Staff Management" && "md:ml-2"
                         )}
-                        onClick={() => setActive(item.name)}
                       >
                         <Icon
                           size={16}
@@ -120,3 +129,4 @@ export default function Sidebar() {
     </aside>
   );
 }
+
