@@ -7,31 +7,22 @@ function parseRequestBody(request: Request) {
   return (async (): Promise<Record<string, unknown>> => {
     const contentType = request.headers.get("content-type") ?? "";
 
-<<<<<<< HEAD
-=======
-    // For multipart form-data we must use formData() and must not read text()
->>>>>>> 3770824df43eb5c39c306a14c3dfa59b3a45ec11
+    // Handle multipart form-data
     if (contentType.includes("multipart/form-data")) {
       const formData = await request.formData();
-      return Object.fromEntries(formData.entries()) as Record<string, unknown>;
+      return Object.fromEntries(
+        formData.entries()
+      ) as Record<string, unknown>;
     }
 
-<<<<<<< HEAD
+    // Read request body as text
     const text = await request.text();
-=======
-    // Read the body as text exactly once, then attempt to parse
-    const text = await request.text();
-    // Debug logging to help diagnose unexpected empty bodies in dev
-    try {
-      console.debug("[api/hospitals] content-type:", contentType);
-      console.debug("[api/hospitals] body text length:", text?.length ?? 0);
-      console.debug("[api/hospitals] body text (truncated):", text ? text.substring(0, 1000) : "")
-    } catch (e) {
-      /* ignore logging errors */
-    }
->>>>>>> 3770824df43eb5c39c306a14c3dfa59b3a45ec11
-    if (!text) return {};
 
+    if (!text) {
+      return {};
+    }
+
+    // Try normal JSON parsing
     try {
       const parsed = JSON.parse(text);
 
@@ -42,42 +33,51 @@ function parseRequestBody(request: Request) {
       ) {
         return parsed as Record<string, unknown>;
       }
-    } catch (e) {
-<<<<<<< HEAD
-      try {
-        let candidate = text
-          .replace(/([,{]\s*)([A-Za-z0-9_]+)\s*:/g, '$1"$2":')
-          .replace(/:\s*([^\",\[{\]\d\-\s][^,}\]]*)(?=[,}])/g, ':"$1"');
-=======
-      // not JSON — try to coerce common JS-style object literals like
-      // {hospitalId:TEST-999,hospitalName:Test Clinic} into valid JSON
-      try {
-        let candidate = text
-          .replace(/([,{]\s*)([A-Za-z0-9_]+)\s*:/g, '$1"$2":')
-          .replace(/:\s*([^",\[{\]\d\-\s][^,}\]]*)(?=[,}])/g, ':"$1"');
->>>>>>> 3770824df43eb5c39c306a14c3dfa59b3a45ec11
-        const parsed2 = JSON.parse(candidate);
-        if (parsed2 && typeof parsed2 === "object" && !Array.isArray(parsed2)) {
-          return parsed2 as Record<string, unknown>;
-        }
-      } catch (e2) {
-        // fall through to urlencoded parse
-      }
-
-      try {
-        return Object.fromEntries(new URLSearchParams(text)) as Record<string, unknown>;
-      } catch (e2) {
-        return {};
-      }
+    } catch (error) {
+      // Continue with fallback parsing
     }
-    return {};
+
+    // Try to parse JS-style object literals
+    try {
+      const candidate = text
+        .replace(
+          /([,{]\s*)([A-Za-z0-9_]+)\s*:/g,
+          '$1"$2":'
+        )
+        .replace(
+          /:\s*([^",\[{\]\d\-\s][^,}\]]*)(?=[,}])/g,
+          ':"$1"'
+        );
+
+      const parsed = JSON.parse(candidate);
+
+      if (
+        parsed &&
+        typeof parsed === "object" &&
+        !Array.isArray(parsed)
+      ) {
+        return parsed as Record<string, unknown>;
+      }
+    } catch (error) {
+      // Continue with URL encoded parsing
+    }
+
+    // Try URL encoded data
+    try {
+      return Object.fromEntries(
+        new URLSearchParams(text)
+      ) as Record<string, unknown>;
+    } catch (error) {
+      return {};
+    }
   })();
 }
 
-<<<<<<< HEAD
+// GET - Find hospital by Hospital ID
 export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
+
     const hospitalId = (
       url.searchParams.get("hospitalId") ?? ""
     ).trim();
@@ -95,6 +95,7 @@ export async function GET(request: Request) {
 
     try {
       const firestore = getFirestoreClient();
+
       const querySnapshot = await firestore
         .collection("hospitals")
         .where("hospitalId", "==", hospitalId)
@@ -102,10 +103,16 @@ export async function GET(request: Request) {
         .get();
 
       if (!querySnapshot.empty) {
-        return NextResponse.json({ success: true, hospital: querySnapshot.docs[0].data() });
+        return NextResponse.json({
+          success: true,
+          hospital: querySnapshot.docs[0].data(),
+        });
       }
     } catch (firestoreError) {
-      console.error("Firestore hospital lookup failed", firestoreError);
+      console.error(
+        "Firestore hospital lookup failed:",
+        firestoreError
+      );
     }
 
     return NextResponse.json(
@@ -133,8 +140,7 @@ export async function GET(request: Request) {
   }
 }
 
-=======
->>>>>>> 3770824df43eb5c39c306a14c3dfa59b3a45ec11
+// POST - Register new hospital
 export async function POST(request: Request) {
   try {
     const body = await parseRequestBody(request);
@@ -183,23 +189,20 @@ export async function POST(request: Request) {
         hospitalId: body.hospitalId,
       });
     } catch (firestoreError) {
-      console.error("Firestore write failed", firestoreError);
-      return NextResponse.json({ error: "Failed to save hospital registration to database." }, { status: 500 });
-=======
-    if (firestore) {
-      try {
-        const docRef = await firestore.collection("hospitals").add(record);
-        return NextResponse.json({ success: true, id: docRef.id, hospitalId: body.hospitalId });
-      } catch (firestoreError) {
-        console.error("Firestore write failed, falling back to local storage", firestoreError);
-        localHospitals.push(record);
-        return NextResponse.json({ success: true, id: localHospitals.length, hospitalId: body.hospitalId, fallback: true });
-      }
-    } else {
-      // Firestore not available; persist in-memory for local development
-      localHospitals.push(record);
-      return NextResponse.json({ success: true, id: localHospitals.length, hospitalId: body.hospitalId, fallback: true });
->>>>>>> 3770824df43eb5c39c306a14c3dfa59b3a45ec11
+      console.error(
+        "Firestore write failed:",
+        firestoreError
+      );
+
+      return NextResponse.json(
+        {
+          error:
+            "Failed to save hospital registration to database.",
+        },
+        {
+          status: 500,
+        }
+      );
     }
   } catch (error) {
     console.error(
