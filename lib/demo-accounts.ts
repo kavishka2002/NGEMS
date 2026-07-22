@@ -21,6 +21,13 @@ export const DEMO_ACCOUNTS = {
     role: "Laboratory Staff",
     description: "Test requests and results"
   },
+  doctor: {
+    hospitalId: "NGEMS-HOS-2026-000000",
+    username: "doctor",
+    password: "demo123",
+    role: "Doctor",
+    description: "Doctor dashboard access"
+  },
   admin: {
     hospitalId: "NGEMS-HOS-2026-000000",
     username: "admin",
