@@ -73,19 +73,18 @@ function parseRequestBody(request: Request) {
   })();
 }
 
-// GET - Find hospital by Hospital ID
+// GET - Find hospitals by hospitalId and/or hospitalName
 export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
 
-    const hospitalId = (
-      url.searchParams.get("hospitalId") ?? ""
-    ).trim();
+    const hospitalId = (url.searchParams.get("hospitalId") ?? "").trim();
+    const hospitalName = (url.searchParams.get("hospitalName") ?? "").trim();
 
-    if (!hospitalId) {
+    if (!hospitalId && !hospitalName) {
       return NextResponse.json(
         {
-          error: "Hospital ID is required.",
+          error: "hospitalId or hospitalName is required.",
         },
         {
           status: 400,
@@ -95,24 +94,25 @@ export async function GET(request: Request) {
 
     try {
       const firestore = getFirestoreClient();
+      let query = firestore.collection("hospitals");
 
-      const querySnapshot = await firestore
-        .collection("hospitals")
-        .where("hospitalId", "==", hospitalId)
-        .limit(1)
-        .get();
+      if (hospitalId) {
+        query = query.where("hospitalId", "==", hospitalId);
+      }
+      if (hospitalName) {
+        query = query.where("hospitalName", "==", hospitalName);
+      }
+
+      const querySnapshot = await query.limit(20).get();
 
       if (!querySnapshot.empty) {
         return NextResponse.json({
           success: true,
-          hospital: querySnapshot.docs[0].data(),
+          hospitals: querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })),
         });
       }
     } catch (firestoreError) {
-      console.error(
-        "Firestore hospital lookup failed:",
-        firestoreError
-      );
+      console.error("Firestore hospital lookup failed:", firestoreError);
     }
 
     return NextResponse.json(
@@ -124,10 +124,7 @@ export async function GET(request: Request) {
       }
     );
   } catch (error) {
-    console.error(
-      "Hospital lookup failed:",
-      error
-    );
+    console.error("Hospital lookup failed:", error);
 
     return NextResponse.json(
       {
