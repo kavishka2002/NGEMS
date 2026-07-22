@@ -12,7 +12,7 @@ async function parseRequestBody(request: Request): Promise<Record<string, unknow
       if (json && typeof json === "object" && !Array.isArray(json)) {
         return json as Record<string, unknown>;
       }
-    } catch {
+    } catch { 
       // fall back to text parsing
     }
   }

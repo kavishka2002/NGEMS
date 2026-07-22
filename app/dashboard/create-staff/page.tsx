@@ -248,11 +248,19 @@ export default function CreateStaffPage() {
       const payload = {
         ...form,
         employeeId,
+<<<<<<< HEAD
         hospitalId: hospitalSession.hospitalId,
         hospitalName: hospitalSession.hospitalName,
         photoBase64,
         createdBy: hospitalSession.username || "Admin User",
+=======
+        hospitalId: "HOS-0001",
+        hospitalName: "National Hospital Colombo",
+        photoBase64: photoBase64 || undefined,
+        createdBy: "Admin User",
+>>>>>>> 48d2f13a391d1ee7097dd2f65132fdee24f4ead9
       };
+
 
       const response = await createStaffAccount(payload);
 
