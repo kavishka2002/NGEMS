@@ -47,7 +47,7 @@ export default function PharmacyDashboardPage() {
             </div>
           </div>
 
-          {/* Dashboard Stats */}
+          {/* Dashboard Stat */}
           <div className="mb-10">
             <PharmacyDashboardStats />
           </div>
