@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Bell, ChevronDown, LogOut, ShieldCheck } from "lucide-react";
 
 type DashboardNavbarProps = {
@@ -8,6 +9,14 @@ type DashboardNavbarProps = {
   hospitalName?: string;
   hospitalDistrict?: string;
   hospitalId?: string;
+};
+
+type HospitalSession = {
+  hospitalId?: string;
+  hospitalName?: string;
+  district?: string;
+  username?: string;
+  role?: string;
 };
 
 function getInitials(name: string) {
@@ -21,13 +30,31 @@ function getInitials(name: string) {
 }
 
 export default function DashboardNavbar({
-  userName = "Admin User",
-  userRole = "Hospital Administrator",
-  hospitalName = "Your hospital",
-  hospitalDistrict = "",
-  hospitalId = "NGEMS-HOS-2026-000000",
+  userName,
+  userRole,
+  hospitalName,
+  hospitalDistrict,
+  hospitalId,
 }: DashboardNavbarProps) {
-  const initials = getInitials(userName);
+  const [session, setSession] = useState<HospitalSession | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const raw = window.localStorage.getItem("ngemsHospitalSession");
+    if (!raw) return;
+    try {
+      setSession(JSON.parse(raw) as HospitalSession);
+    } catch {
+      setSession(null);
+    }
+  }, []);
+
+  const actualHospitalName = hospitalName || session?.hospitalName || "Your hospital";
+  const actualHospitalDistrict = hospitalDistrict || session?.district || "";
+  const actualHospitalId = hospitalId || session?.hospitalId || "NGEMS-HOS-2026-000000";
+  const actualUserName = userName || session?.username || "Admin User";
+  const actualUserRole = userRole || session?.role || "Hospital Administrator";
+  const initials = getInitials(actualUserName);
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-blue-300 px-4 md:px-6" style={{ backgroundColor: "#0B2545" }}>
@@ -46,21 +73,21 @@ export default function DashboardNavbar({
       <div className="hidden md:flex items-center gap-3 rounded-md border border-white/10 bg-white/5 px-3 py-1.5">
         <div className="text-right leading-tight">
           <p className="text-[10px] uppercase tracking-wider text-white">Hospital</p>
-          <p className="text-sm font-medium text-white">{hospitalName}</p>
+          <p className="text-sm font-medium text-white">{actualHospitalName}</p>
         </div>
-        {hospitalDistrict ? (
+        {actualHospitalDistrict ? (
           <>
             <div className="h-8 w-px bg-white/10" />
             <div className="text-left leading-tight">
               <p className="text-[10px] uppercase tracking-wider text-white">District</p>
-              <p className="text-sm font-medium text-white">{hospitalDistrict}</p>
+              <p className="text-sm font-medium text-white">{actualHospitalDistrict}</p>
             </div>
           </>
         ) : null}
         <div className="h-8 w-px bg-white/10" />
         <div className="text-left leading-tight">
           <p className="text-[10px] uppercase tracking-wider text-white">Hospital ID</p>
-          <p className="font-mono text-sm font-semibold tracking-wide text-white">{hospitalId}</p>
+          <p className="font-mono text-sm font-semibold tracking-wide text-white">{actualHospitalId}</p>
         </div>
       </div>
 
@@ -78,8 +105,8 @@ export default function DashboardNavbar({
             {initials}
           </div>
           <div className="hidden text-left leading-tight lg:block">
-            <p className="text-sm font-medium text-white">{userName}</p>
-            <p className="text-[11px] text-white">{userRole}</p>
+            <p className="text-sm font-medium text-white">{actualUserName}</p>
+            <p className="text-[11px] text-white">{actualUserRole}</p>
           </div>
           <ChevronDown size={14} className="hidden text-white lg:block" />
         </button>
