@@ -8,6 +8,7 @@ import Logo from "@/components/Logo";
 import Input from "@/components/Input";
 import PasswordInput from "@/components/PasswordInput";
 import Button from "@/components/Button";
+import DemoAccountsInfo from "@/components/DemoAccountsInfo";
 
 type FormState = {
   hospitalId: string;
@@ -35,13 +36,66 @@ export default function LoginPage() {
     return Object.keys(next).length === 0;
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setFormError(null);
     setSubmitting(true);
 
-    // Demo flow: navigate directly to the dashboard.
-    router.push("/dashboard");
+    if (!validate()) {
+      setSubmitting(false);
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          hospitalId: form.hospitalId,
+          username: form.username,
+          password: form.password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Invalid credentials.");
+      }
+
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(
+          "ngemsHospitalSession",
+          JSON.stringify({
+            hospitalId: data.hospitalId,
+            hospitalName: data.hospitalName,
+            hospitalType: data.hospitalType,
+            province: data.province,
+            district: data.district,
+            address: data.address,
+            contactNumber: data.contactNumber,
+            email: data.email,
+            username: data.username,
+            role: data.role,
+          })
+        );
+      }
+
+      if (form.username === "reception") {
+        router.push("/dashboard/reception");
+      } else if (form.username === "pharmacy") {
+        router.push("/pharmacy");
+      } else if (form.username === "laboratory") {
+        router.push("/laboratory");
+      } else {
+        router.push("/dashboard");
+      }
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : "Unable to sign in.");
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -154,6 +208,8 @@ export default function LoginPage() {
                 </Button>
               </div>
             </form>
+
+            <DemoAccountsInfo />
 
             <div className="mt-6 space-y-3 text-center text-sm text-navy-300">
               <p>
