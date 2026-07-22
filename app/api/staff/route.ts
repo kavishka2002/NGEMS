@@ -220,6 +220,7 @@ export async function POST(request: NextRequest) {
             joiningDate: data.joiningDate,
             employmentType: data.employmentType,
             username: data.username,
+            password: data.password,
             status: data.status || "Active",
             photoUrl: normalizedPhotoUrl,
             createdAt: now,

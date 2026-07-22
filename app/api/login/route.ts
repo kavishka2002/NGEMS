@@ -39,6 +39,60 @@ function normalizeString(value: unknown): string {
   return "";
 }
 
+function normalizeCredential(value: unknown): string {
+  if (typeof value !== "string") return "";
+  return value.trim().toLowerCase();
+}
+
+const firebaseApiKey =
+  process.env.NEXT_PUBLIC_FIREBASE_API_KEY ||
+  process.env.FIREBASE_API_KEY ||
+  "";
+
+async function verifyPasswordWithFirebaseAuth(email: string, password: string): Promise<boolean> {
+  if (!firebaseApiKey) {
+    console.error("Missing Firebase API key for auth verification");
+    return false;
+  }
+
+  try {
+    const response = await fetch(
+      `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${firebaseApiKey}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          password,
+          returnSecureToken: true,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      return false;
+    }
+
+    const data = await response.json();
+    return !!data.idToken;
+  } catch (error) {
+    console.error("Firebase Auth password verify failed", error);
+    return false;
+  }
+}
+
+function getRedirectPath(role: string) {
+  const normalized = role.toLowerCase();
+  if (normalized.includes("reception")) return "/dashboard/reception";
+  if (normalized.includes("pharmacy")) return "/pharmacy/dashboard";
+  if (normalized.includes("laboratory")) return "/laboratory/dashboard";
+  if (normalized.includes("doctor") || normalized.includes("nurse")) return "/dashboard";
+  if (normalized.includes("administrator") || normalized.includes("admin") || normalized.includes("hospital user")) return "/dashboard";
+  return "/dashboard";
+}
+
 export async function POST(request: Request) {
   try {
     const body = await parseRequestBody(request);
@@ -54,23 +108,48 @@ export async function POST(request: Request) {
     }
 
     let userRecord: Record<string, unknown> | null = null;
-    let querySnapshot: any = null;
+    let foundInStaff = false;
 
     try {
       const firestore = getFirestoreClient();
-      querySnapshot = await firestore
+      const hospitalSnapshot = await firestore
         .collection("hospitals")
         .where("hospitalId", "==", hospitalId)
-        .where("adminUsername", "==", username)
-        .where("password", "==", password)
         .limit(1)
         .get();
 
-      if (querySnapshot && !querySnapshot.empty) {
-        userRecord = querySnapshot.docs[0].data();
+      if (hospitalSnapshot && !hospitalSnapshot.empty) {
+        const hospitalData = hospitalSnapshot.docs[0].data();
+        const adminUsername = normalizeCredential(hospitalData.adminUsername);
+        const adminPassword = normalizeCredential(hospitalData.password);
+
+        if (adminUsername === normalizeCredential(username) && adminPassword === normalizeCredential(password)) {
+          userRecord = hospitalData;
+          userRecord._isAdmin = true;
+        }
       }
     } catch (firestoreError) {
-      console.error("Firestore login lookup failed", firestoreError);
+      console.error("Firestore admin login lookup failed", firestoreError);
+    }
+
+    if (!userRecord) {
+      try {
+        const firestore = getFirestoreClient();
+        const staffSnapshot = await firestore
+          .collection("staff")
+          .where("hospitalId", "==", hospitalId)
+          .where("username", "==", username)
+          .limit(1)
+          .get();
+
+        if (staffSnapshot && !staffSnapshot.empty) {
+          const staffData = staffSnapshot.docs[0].data();
+          userRecord = staffData;
+          foundInStaff = true;
+        }
+      } catch (firestoreError) {
+        console.error("Firestore staff login lookup failed", firestoreError);
+      }
     }
 
     if (!userRecord) {
@@ -80,16 +159,52 @@ export async function POST(request: Request) {
       );
     }
 
+    if (foundInStaff) {
+      const storedPassword = normalizeString(userRecord.password);
+
+      if (storedPassword) {
+        if (storedPassword !== password) {
+          return NextResponse.json(
+            { error: "Invalid Hospital ID, username, or password." },
+            { status: 401 }
+          );
+        }
+      } else {
+        const email = normalizeString(userRecord.email);
+        if (!firebaseApiKey) {
+          console.error("Staff login requires Firebase API key or stored password.");
+          return NextResponse.json(
+            {
+              error:
+                "Staff credentials cannot be verified because the server is missing the Firebase API key. Please set NEXT_PUBLIC_FIREBASE_API_KEY or recreate the staff account with a stored password.",
+            },
+            { status: 401 }
+          );
+        }
+
+        const passwordIsValid = await verifyPasswordWithFirebaseAuth(email, password);
+        if (!passwordIsValid) {
+          return NextResponse.json(
+            { error: "Invalid Hospital ID, username, or password." },
+            { status: 401 }
+          );
+        }
+      }
+    }
+
     const resolvedHospitalName =
       normalizeString(userRecord.hospitalName) ||
       normalizeString(userRecord.name) ||
       normalizeString(userRecord.hospitalType) ||
       "Your hospital";
 
-    const role = normalizeString(userRecord.role) ||
-      (username === "admin" ? "Administrator" : "Hospital User");
+    const resolvedRole =
+      normalizeString(userRecord.role) ||
+      (userRecord._isAdmin ? "Hospital Administrator" : "Staff");
 
-    return NextResponse.json({
+    const redirectPath = getRedirectPath(resolvedRole);
+
+    const baseResponse = {
       success: true,
       hospitalId,
       hospitalName: resolvedHospitalName,
@@ -100,8 +215,18 @@ export async function POST(request: Request) {
       contactNumber: normalizeString(userRecord.contactNumber) || "",
       email: normalizeString(userRecord.email) || "",
       username,
-      role,
-    });
+      role: resolvedRole,
+      redirectPath,
+    };
+
+    if (foundInStaff) {
+      return NextResponse.json({
+        ...baseResponse,
+        staffRole: resolvedRole,
+      });
+    }
+
+    return NextResponse.json(baseResponse);
   } catch (error) {
     console.error("Hospital login failed", error);
     return NextResponse.json({ error: "Hospital login failed." }, { status: 500 });
