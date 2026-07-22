@@ -29,10 +29,12 @@ export default function PatientSearchCard({ onResult }: PatientSearchCardProps) 
 
     try {
       const rawSession = typeof window !== "undefined" ? window.localStorage.getItem("ngemsHospitalSession") : null;
-      const hospitalId = rawSession ? (JSON.parse(rawSession) as { hospitalId?: string })?.hospitalId : "";
+      const hospitalId = rawSession
+        ? (JSON.parse(rawSession) as { hospitalId?: string })?.hospitalId
+        : (process.env.NEXT_PUBLIC_HOSPITAL_ID as string) || "";
 
       if (!hospitalId) {
-        setError("Hospital session not found. Please log in again.");
+        setError("Hospital session not found. Please log in again or set NEXT_PUBLIC_HOSPITAL_ID.");
         onResult(null, true);
         return;
       }

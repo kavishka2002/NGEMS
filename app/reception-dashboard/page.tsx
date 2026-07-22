@@ -151,7 +151,7 @@ export default function ReceptionDashboardPage() {
             </div>
 
             <div className="space-y-6 lg:sticky lg:top-24 lg:self-start">
-              {record ? (
+              {record && record.patient ? (
                 <PatientFoundCard patient={record.patient} onViewHistory={scrollToDetail} />
               ) : (
                 <PatientSearchCard onResult={handleResult} />
@@ -165,9 +165,9 @@ export default function ReceptionDashboardPage() {
           </div>
 
           {/* Full medical record — appears once a patient is found */}
-          {record && (
+          {record && record.patient && (
             <div ref={detailRef} className="scroll-mt-24 space-y-6">
-              <p className="divider-label">Complete Medical Record &middot; {record.patient.name}</p>
+              <p className="divider-label">Complete Medical Record &middot; {record.patient.name ?? (record.patient as any).fullName ?? "—"}</p>
               <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
                 <div className="space-y-6 lg:col-span-2">
                   <PatientTimeline visits={record.visits} />

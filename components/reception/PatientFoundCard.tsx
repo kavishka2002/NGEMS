@@ -10,6 +10,8 @@ import {
 } from "lucide-react";
 import Button from "@/components/Button";
 import { Patient, calcAge } from "@/lib/reception-data";
+import { useState } from "react";
+import AppointmentModal from "@/components/reception/AppointmentModal";
 
 type PatientFoundCardProps = {
   patient: Patient;
@@ -17,11 +19,15 @@ type PatientFoundCardProps = {
 };
 
 export default function PatientFoundCard({ patient, onViewHistory }: PatientFoundCardProps) {
-  const initials = patient.name
+  const [showBooking, setShowBooking] = useState(false);
+  const displayName = (patient && (patient.name || (patient as any).fullName || patient.mobile)) || "Unknown";
+  const initials = displayName
+    .toString()
     .split(" ")
-    .map((p) => p[0])
+    .map((p) => (p ? p[0] : ""))
     .slice(0, 2)
-    .join("");
+    .join("")
+    .toUpperCase();
 
   return (
     <div className="rounded-2xl border border-health-100 bg-health-50/60 p-6 shadow-card">
@@ -36,7 +42,7 @@ export default function PatientFoundCard({ patient, onViewHistory }: PatientFoun
         </span>
         <div className="min-w-0">
           <p className="truncate font-display text-base font-semibold text-navy-900">
-            {patient.name}
+            {displayName}
           </p>
           <p className="font-mono text-xs text-navy-400">{patient.id}</p>
         </div>
@@ -87,7 +93,7 @@ export default function PatientFoundCard({ patient, onViewHistory }: PatientFoun
           <FileClock size={14} />
           Medical History
         </Button>
-        <Button variant="secondary" fullWidth type="button">
+        <Button variant="secondary" fullWidth type="button" onClick={() => setShowBooking(true)}>
           <CalendarPlus size={14} />
           Book Appointment
         </Button>
@@ -100,6 +106,16 @@ export default function PatientFoundCard({ patient, onViewHistory }: PatientFoun
           New Consultation
         </Button>
       </div>
+      {showBooking && (
+        <AppointmentModal
+          patient={patient}
+          onClose={() => setShowBooking(false)}
+          onSaved={(appt) => {
+            // Optionally notify user or refresh lists
+            console.log("Appointment created", appt);
+          }}
+        />
+      )}
     </div>
   );
 }

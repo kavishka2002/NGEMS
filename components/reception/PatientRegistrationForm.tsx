@@ -88,7 +88,9 @@ export default function PatientRegistrationForm({ onCheckExisting }: PatientRegi
   useEffect(() => {
     const loadDoctorOptions = async () => {
       const rawSession = typeof window !== "undefined" ? window.localStorage.getItem("ngemsHospitalSession") : null;
-      const hospitalId = rawSession ? (JSON.parse(rawSession) as { hospitalId?: string })?.hospitalId : null;
+      const hospitalId = rawSession
+        ? (JSON.parse(rawSession) as { hospitalId?: string })?.hospitalId
+        : (process.env.NEXT_PUBLIC_HOSPITAL_ID as string) || null;
 
       if (!hospitalId) {
         setDoctorLoadError("Unable to load doctors without a valid hospital session.");
@@ -143,14 +145,13 @@ export default function PatientRegistrationForm({ onCheckExisting }: PatientRegi
     if (!validate()) return;
 
     const rawSession = typeof window !== "undefined" ? window.localStorage.getItem("ngemsHospitalSession") : null;
-    if (!rawSession) {
-      setServerError("Hospital session is missing. Please log in again.");
-      return;
-    }
+    const session = rawSession ? (JSON.parse(rawSession) as { hospitalId?: string; hospitalName?: string }) : {
+      hospitalId: (process.env.NEXT_PUBLIC_HOSPITAL_ID as string) || undefined,
+      hospitalName: (process.env.NEXT_PUBLIC_HOSPITAL_NAME as string) || undefined,
+    };
 
-    const session = JSON.parse(rawSession) as { hospitalId?: string; hospitalName?: string };
     if (!session?.hospitalId || !session?.hospitalName) {
-      setServerError("Hospital session is incomplete. Please log in again.");
+      setServerError("Hospital session is missing or incomplete. Please log in or set NEXT_PUBLIC_HOSPITAL_ID/NEXT_PUBLIC_HOSPITAL_NAME.");
       return;
     }
 

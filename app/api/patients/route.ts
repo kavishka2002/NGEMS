@@ -121,14 +121,44 @@ export async function GET(request: Request) {
       }
     }
 
+    // If a field-specific search didn't return anything, perform a broader client-side
+    // search across multiple fields as a fallback. This helps when mobile numbers are
+    // stored normalized (mobileSearch) but the user-provided query may include
+    // formatting or unexpected characters.
     if (!snapshot || snapshot.empty) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Patient not found.",
-        },
-        { status: 404 }
-      );
+      const snapshotAll = await patientsRef
+        .where("hospitalId", "==", hospitalId)
+        .orderBy("createdAt", "desc")
+        .limit(500)
+        .get();
+
+      const all = snapshotAll.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+
+      const searchLower = normalizedQuery.toLowerCase();
+      const phoneSearch = normalizePhone(normalizedQuery);
+
+      const found = all.find((item) => {
+        try {
+          const s = JSON.stringify(item).toLowerCase();
+          if (s.includes(searchLower)) return true;
+          if (phoneSearch && JSON.stringify(item).includes(phoneSearch)) return true;
+        } catch {
+          // ignore
+        }
+        return false;
+      });
+
+      if (!found) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Patient not found.",
+          },
+          { status: 404 }
+        );
+      }
+
+      return NextResponse.json({ success: true, patient: found });
     }
 
     const doc = snapshot.docs[0];
