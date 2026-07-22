@@ -8,7 +8,6 @@ import Logo from "@/components/Logo";
 import Input from "@/components/Input";
 import PasswordInput from "@/components/PasswordInput";
 import Button from "@/components/Button";
-import DemoAccountsInfo from "@/components/DemoAccountsInfo";
 
 type FormState = {
   hospitalId: string;
@@ -63,6 +62,24 @@ export default function LoginPage() {
 
       if (!response.ok) {
         throw new Error(data.error || "Invalid credentials.");
+      }
+
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(
+          "ngemsHospitalSession",
+          JSON.stringify({
+            hospitalId: data.hospitalId,
+            hospitalName: data.hospitalName,
+            hospitalType: data.hospitalType,
+            province: data.province,
+            district: data.district,
+            address: data.address,
+            contactNumber: data.contactNumber,
+            email: data.email,
+            username: data.username,
+            role: data.role,
+          })
+        );
       }
 
       if (form.username === "reception") {
@@ -190,8 +207,6 @@ export default function LoginPage() {
                 </Button>
               </div>
             </form>
-
-            <DemoAccountsInfo />
 
             <div className="mt-6 space-y-3 text-center text-sm text-navy-300">
               <p>
