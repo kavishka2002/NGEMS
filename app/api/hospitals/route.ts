@@ -11,7 +11,9 @@ async function parseRequestBody(
   // Handle multipart form-data
   if (contentType.includes("multipart/form-data")) {
     const formData = await request.formData();
-    return Object.fromEntries(formData.entries()) as Record<string, unknown>;
+    return Object.fromEntries(
+      formData.entries()
+    ) as Record<string, unknown>;
   }
 
   // Read body once
@@ -22,8 +24,11 @@ async function parseRequestBody(
     console.debug("[api/hospitals] body length:", text.length);
   } catch {}
 
-  if (!text) return {};
+  if (!text) {
+    return {};
+  }
 
+  // Try JSON
   try {
     const parsed = JSON.parse(text);
 
@@ -34,82 +39,119 @@ async function parseRequestBody(
     ) {
       return parsed as Record<string, unknown>;
     }
-  } catch {
-    // Try to convert JS object literal into JSON
-    try {
-      const candidate = text
-        .replace(/([,{]\s*)([A-Za-z0-9_]+)\s*:/g, '$1"$2":')
-        .replace(
-          /:\s*([^",\[\{\]\d\-\s][^,}\]]*)(?=[,}])/g,
-          ':"$1"'
-        );
+  } catch {}
 
-      const parsed = JSON.parse(candidate);
+  // Try JS object literal
+  try {
+    const candidate = text
+      .replace(
+        /([,{]\s*)([A-Za-z0-9_]+)\s*:/g,
+        '$1"$2":'
+      )
+      .replace(
+        /:\s*([^",\[\{\]\d\-\s][^,}\]]*)(?=[,}])/g,
+        ':"$1"'
+      );
 
-      if (
-        parsed &&
-        typeof parsed === "object" &&
-        !Array.isArray(parsed)
-      ) {
-        return parsed as Record<string, unknown>;
-      }
-    } catch {}
+    const parsed = JSON.parse(candidate);
 
-    // Try URL encoded form
-    try {
-      return Object.fromEntries(
-        new URLSearchParams(text)
-      ) as Record<string, unknown>;
-    } catch {
-      return {};
+    if (
+      parsed &&
+      typeof parsed === "object" &&
+      !Array.isArray(parsed)
+    ) {
+      return parsed as Record<string, unknown>;
     }
-  }
+  } catch {}
 
-  return {};
+  // Try URL encoded
+  try {
+    return Object.fromEntries(
+      new URLSearchParams(text)
+    ) as Record<string, unknown>;
+  } catch {
+    return {};
+  }
 }
 
+// GET - Search hospitals
 export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
-    const hospitalId =
-      url.searchParams.get("hospitalId")?.trim() ?? "";
 
-    if (!hospitalId) {
+    const hospitalId =
+      (url.searchParams.get("hospitalId") ?? "").trim();
+
+    const hospitalName =
+      (url.searchParams.get("hospitalName") ?? "").trim();
+
+    if (!hospitalId && !hospitalName) {
       return NextResponse.json(
-        { error: "Hospital ID is required." },
-        { status: 400 }
+        {
+          error: "hospitalId or hospitalName is required.",
+        },
+        {
+          status: 400,
+        }
       );
     }
 
     const firestore = getFirestoreClient();
 
-    const snapshot = await firestore
-      .collection("hospitals")
-      .where("hospitalId", "==", hospitalId)
-      .limit(1)
-      .get();
+    let query: FirebaseFirestore.Query =
+      firestore.collection("hospitals");
+
+    if (hospitalId) {
+      query = query.where(
+        "hospitalId",
+        "==",
+        hospitalId
+      );
+    }
+
+    if (hospitalName) {
+      query = query.where(
+        "hospitalName",
+        "==",
+        hospitalName
+      );
+    }
+
+    const snapshot = await query.limit(20).get();
 
     if (snapshot.empty) {
       return NextResponse.json(
-        { error: "Hospital not found." },
-        { status: 404 }
+        {
+          error: "Hospital not found.",
+        },
+        {
+          status: 404,
+        }
       );
     }
 
     return NextResponse.json({
       success: true,
-      hospital: snapshot.docs[0].data(),
+      hospitals: snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      })),
     });
   } catch (error) {
     console.error("Hospital lookup failed:", error);
 
     return NextResponse.json(
-      { error: "Failed to load hospital record." },
-      { status: 500 }
+      {
+        error: "Failed to load hospital record.",
+      },
+      {
+        status: 500,
+      }
     );
   }
 }
 
+// POST - Register hospital
 export async function POST(request: Request) {
   try {
     const body = await parseRequestBody(request);
@@ -147,15 +189,32 @@ export async function POST(request: Request) {
 
     const firestore = getFirestoreClient();
 
-    const docRef = await firestore
-      .collection("hospitals")
-      .add(record);
+    try {
+      const docRef = await firestore
+        .collection("hospitals")
+        .add(record);
 
-    return NextResponse.json({
-      success: true,
-      id: docRef.id,
-      hospitalId: body.hospitalId,
-    });
+      return NextResponse.json({
+        success: true,
+        id: docRef.id,
+        hospitalId: body.hospitalId,
+      });
+    } catch (firestoreError) {
+      console.error(
+        "Firestore write failed:",
+        firestoreError
+      );
+
+      return NextResponse.json(
+        {
+          error:
+            "Failed to save hospital registration to database.",
+        },
+        {
+          status: 500,
+        }
+      );
+    }
   } catch (error) {
     console.error(
       "Hospital registration save failed:",
@@ -172,4 +231,4 @@ export async function POST(request: Request) {
       }
     );
   }
-}
+} 
