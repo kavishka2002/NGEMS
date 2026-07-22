@@ -8,7 +8,6 @@ import Logo from "@/components/Logo";
 import Input from "@/components/Input";
 import PasswordInput from "@/components/PasswordInput";
 import Button from "@/components/Button";
-import DemoAccountsInfo from "@/components/DemoAccountsInfo";
 
 type FormState = {
   hospitalId: string;
@@ -208,8 +207,6 @@ export default function LoginPage() {
                 </Button>
               </div>
             </form>
-
-            <DemoAccountsInfo />
 
             <div className="mt-6 space-y-3 text-center text-sm text-navy-300">
               <p>

@@ -1,9 +1,9 @@
 import { Building2, CheckCircle2, MapPin, Phone, Mail, ShieldCheck } from "lucide-react";
-import { hospital as defaultHospital } from "@/lib/data";
 
 type HospitalProfile = {
   hospitalId?: string;
   hospitalName?: string;
+  name?: string;
   hospitalType?: string;
   province?: string;
   district?: string;
@@ -20,16 +20,16 @@ type ProfileCardProps = {
 
 export default function ProfileCard({ hospital }: ProfileCardProps) {
   const profile = {
-    name: hospital?.hospitalName || hospital?.name || defaultHospital.name,
-    id: hospital?.hospitalId || defaultHospital.id,
-    type: hospital?.hospitalType || defaultHospital.type,
-    province: hospital?.province || defaultHospital.province,
-    district: hospital?.district || defaultHospital.district,
-    address: hospital?.address || defaultHospital.address,
-    contact: hospital?.contactNumber || defaultHospital.contact,
-    email: hospital?.email || defaultHospital.email,
-    status: hospital?.status || defaultHospital.status,
-    registeredOn: hospital?.registeredOn || defaultHospital.registeredOn,
+    name: hospital?.hospitalName || hospital?.name || "Not available",
+    id: hospital?.hospitalId || "Not available",
+    type: hospital?.hospitalType || "Not available",
+    province: hospital?.province || "Not available",
+    district: hospital?.district || "Not available",
+    address: hospital?.address || "Not available",
+    contact: hospital?.contactNumber || "Not available",
+    email: hospital?.email || "Not available",
+    status: hospital?.status || "Not available",
+    registeredOn: hospital?.registeredOn || "Not available",
   };
 
   const fields = [
@@ -59,7 +59,7 @@ export default function ProfileCard({ hospital }: ProfileCardProps) {
           <ShieldCheck size={15} className="text-seal-100" />
           <div className="leading-tight">
             <p className="text-[9px] uppercase tracking-[0.14em] text-seal-100/70">Registry ID</p>
-            <p className="font-mono text-sm font-semibold tracking-wide text-white">{profile.id}</p>
+            <p className="font-mono text-sm font-semibold tracking-wide text-black">{profile.id}</p>
           </div>
         </div>
       </div>
