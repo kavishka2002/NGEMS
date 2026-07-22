@@ -113,16 +113,8 @@ export default function StaffLoginPage() {
         );
       }
 
-      const role = String(data.role ?? "").toLowerCase();
-      if (role.includes("reception")) {
-        router.push("/dashboard/reception");
-      } else if (role.includes("pharmacy")) {
-        router.push("/pharmacy");
-      } else if (role.includes("laboratory")) {
-        router.push("/laboratory");
-      } else {
-        router.push("/dashboard");
-      }
+      const redirectPath = data.redirectPath || "/dashboard";
+      router.push(redirectPath);
     } catch (error) {
       setFormError(error instanceof Error ? error.message : "Unable to sign in.");
       setSubmitting(false);

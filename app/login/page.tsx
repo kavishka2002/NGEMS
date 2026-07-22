@@ -82,15 +82,8 @@ export default function LoginPage() {
         );
       }
 
-      if (form.username === "reception") {
-        router.push("/dashboard/reception");
-      } else if (form.username === "pharmacy") {
-        router.push("/pharmacy");
-      } else if (form.username === "laboratory") {
-        router.push("/laboratory");
-      } else {
-        router.push("/dashboard");
-      }
+      const redirectPath = data.redirectPath || "/dashboard";
+      router.push(redirectPath);
     } catch (error) {
       setFormError(error instanceof Error ? error.message : "Unable to sign in.");
       setSubmitting(false);

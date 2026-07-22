@@ -18,7 +18,8 @@ if (!getApps().length) {
         initializeApp({
             credential: cert(serviceAccount),
             projectId: serviceAccount.project_id || process.env.FIREBASE_PROJECT_ID,
-            storageBucket: process.env.FIREBASE_STORAGE_BUCKET || "ngems-9815e.firebasestorage.app",
+            storageBucket:
+                process.env.FIREBASE_STORAGE_BUCKET || `${serviceAccount.project_id}.appspot.com`,
         });
     } else if (
         process.env.FIREBASE_PROJECT_ID &&
@@ -31,7 +32,8 @@ if (!getApps().length) {
                 clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
                 privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n"),
             }),
-            storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+            storageBucket:
+                process.env.FIREBASE_STORAGE_BUCKET || `${process.env.FIREBASE_PROJECT_ID}.appspot.com`,
         });
     }
 }
@@ -58,34 +60,61 @@ async function parseFormData(request: NextRequest) {
     return body;
 }
 
+function normalizeUrl(value: unknown): string | null {
+    if (!value || typeof value !== "string") return null;
+    const trimmed = value.trim();
+    if (!trimmed || trimmed.toLowerCase() === "none" || trimmed.toLowerCase() === "null" || trimmed.toLowerCase() === "undefined") {
+        return null;
+    }
+    return trimmed;
+}
+
+function parseDataUrl(value: unknown): { mimeType: string; base64: string } | null {
+    if (typeof value !== "string") return null;
+    const trimmed = value.trim();
+    const match = trimmed.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,([A-Za-z0-9+/=\s]+)$/);
+    if (!match) return null;
+    return {
+        mimeType: match[1],
+        base64: match[2].replace(/\s+/g, ""),
+    };
+}
+
+function isValidBase64Image(value: unknown): value is string {
+    return parseDataUrl(value) !== null;
+}
+
 async function uploadPhotoToStorage(
-    photoBase64: string,
+    photoDataUrl: string,
     hospitalId: string,
     employeeId: string
 ): Promise<string | null> {
     try {
-        if (!photoBase64) return null;
+        const parsed = parseDataUrl(photoDataUrl);
+        if (!parsed) {
+            console.warn("Invalid photoBase64 data; skipping upload.");
+            return null;
+        }
 
-        // Convert base64 to buffer
-        const buffer = Buffer.from(photoBase64.replace(/^data:image\/\w+;base64,/, ""), "base64");
+        const buffer = Buffer.from(parsed.base64, "base64");
         const bucket = storage.bucket();
-        const fileName = `staff-photos/${hospitalId}/${employeeId}.jpg`;
+        const extension = parsed.mimeType.split("/")[1].replace("jpeg", "jpg");
+        const fileName = `staff-photos/${hospitalId}/${employeeId}.${extension}`;
         const file = bucket.file(fileName);
 
         await file.save(buffer, {
             metadata: {
-                contentType: "image/jpeg",
+                contentType: parsed.mimeType,
             },
         });
 
-        // Make file public and get signed URL
         const [url] = await file.getSignedUrl({
             version: "v4",
             action: "read",
-            expires: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days
+            expires: Date.now() + 7 * 24 * 60 * 60 * 1000,
         });
 
-        return url;
+        return normalizeUrl(url);
     } catch (error) {
         console.error("Error uploading photo:", error);
         return null;
@@ -164,13 +193,15 @@ export async function POST(request: NextRequest) {
 
         // Upload photo if provided
         let photoUrl: string | null = null;
-        if (data.photoBase64) {
+        if (typeof data.photoBase64 === "string" && data.photoBase64.trim()) {
             photoUrl = await uploadPhotoToStorage(
-                data.photoBase64 as string,
+                data.photoBase64,
                 data.hospitalId as string,
                 data.employeeId as string
             );
         }
+
+        const normalizedPhotoUrl = normalizeUrl(photoUrl);
 
         // Create authentication user
         let uid: string;
@@ -179,7 +210,7 @@ export async function POST(request: NextRequest) {
                 email: data.email as string,
                 password: data.password as string,
                 displayName: data.fullName as string,
-                photoURL: photoUrl || undefined,
+                photoURL: normalizedPhotoUrl || undefined,
             });
             uid = userRecord.uid;
         } catch (authError: any) {
@@ -215,8 +246,9 @@ export async function POST(request: NextRequest) {
             joiningDate: data.joiningDate,
             employmentType: data.employmentType,
             username: data.username,
+            password: data.password,
             status: data.status || "Active",
-            photoUrl: photoUrl || null,
+            photoUrl: normalizedPhotoUrl,
             createdAt: now,
             updatedAt: now,
             createdBy: data.createdBy || "admin",
@@ -275,10 +307,14 @@ export async function GET(request: NextRequest) {
         }
 
         const snapshot = await query.get();
-        const staff = snapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-        }));
+        const staff = snapshot.docs.map((doc) => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                ...data,
+                photoUrl: normalizeUrl(data.photoUrl),
+            };
+        });
 
         return NextResponse.json({ success: true, data: staff });
     } catch (error) {
