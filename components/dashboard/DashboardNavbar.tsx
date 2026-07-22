@@ -6,6 +6,7 @@ type DashboardNavbarProps = {
   userName?: string;
   userRole?: string;
   hospitalName?: string;
+  hospitalDistrict?: string;
   hospitalId?: string;
 };
 
@@ -23,6 +24,7 @@ export default function DashboardNavbar({
   userName = "Admin User",
   userRole = "Hospital Administrator",
   hospitalName = "Your hospital",
+  hospitalDistrict = "",
   hospitalId = "NGEMS-HOS-2026-000000",
 }: DashboardNavbarProps) {
   const initials = getInitials(userName);
@@ -46,6 +48,15 @@ export default function DashboardNavbar({
           <p className="text-[10px] uppercase tracking-wider text-white">Hospital</p>
           <p className="text-sm font-medium text-white">{hospitalName}</p>
         </div>
+        {hospitalDistrict ? (
+          <>
+            <div className="h-8 w-px bg-white/10" />
+            <div className="text-left leading-tight">
+              <p className="text-[10px] uppercase tracking-wider text-white">District</p>
+              <p className="text-sm font-medium text-white">{hospitalDistrict}</p>
+            </div>
+          </>
+        ) : null}
         <div className="h-8 w-px bg-white/10" />
         <div className="text-left leading-tight">
           <p className="text-[10px] uppercase tracking-wider text-white">Hospital ID</p>

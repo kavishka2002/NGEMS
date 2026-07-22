@@ -3,8 +3,6 @@ import { getFirestoreClient } from "@/lib/firebaseAdmin";
 
 export const runtime = "nodejs";
 
-const localHospitals: Array<Record<string, unknown>> = [];
-
 async function parseRequestBody(request: Request): Promise<Record<string, unknown>> {
   const contentType = request.headers.get("content-type") ?? "";
 
@@ -76,15 +74,6 @@ export async function POST(request: Request) {
     }
 
     if (!userRecord) {
-      userRecord = localHospitals.find(
-        (record) =>
-          normalizeString(record.hospitalId) === hospitalId &&
-          normalizeString(record.adminUsername) === username &&
-          normalizeString(record.password) === password
-      ) || null;
-    }
-
-    if (!userRecord) {
       return NextResponse.json(
         { error: "Invalid Hospital ID, username, or password." },
         { status: 401 }
@@ -94,7 +83,6 @@ export async function POST(request: Request) {
     const resolvedHospitalName =
       normalizeString(userRecord.hospitalName) ||
       normalizeString(userRecord.name) ||
-      normalizeString(userRecord.hospital) ||
       normalizeString(userRecord.hospitalType) ||
       "Your hospital";
 
