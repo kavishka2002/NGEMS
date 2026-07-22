@@ -103,6 +103,7 @@ export default function DashboardPageShell() {
   };
 
   const hospitalName = currentHospital.hospitalName;
+  const hospitalDistrict = currentHospital.district;
   const hospitalId = currentHospital.hospitalId;
   const userName = session?.username || "Admin User";
   const userRole = session?.role || "Hospital Administrator";
@@ -111,6 +112,7 @@ export default function DashboardPageShell() {
     <div className="flex h-screen flex-col overflow-hidden" style={{ backgroundColor: "#F0F4F8" }}>
       <DashboardNavbar
         hospitalName={hospitalName}
+        hospitalDistrict={hospitalDistrict}
         hospitalId={hospitalId}
         userName={userName}
         userRole={userRole}
