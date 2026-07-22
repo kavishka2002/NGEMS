@@ -1,11 +1,12 @@
 "use client";
 
 import { Bell, ChevronDown, LogOut, ShieldCheck } from "lucide-react";
-import { hospital } from "@/lib/data";
 
 type DashboardNavbarProps = {
   userName?: string;
   userRole?: string;
+  hospitalName?: string;
+  hospitalId?: string;
 };
 
 function getInitials(name: string) {
@@ -21,6 +22,8 @@ function getInitials(name: string) {
 export default function DashboardNavbar({
   userName = "Admin User",
   userRole = "Hospital Administrator",
+  hospitalName = "Your hospital",
+  hospitalId = "NGEMS-HOS-2026-000000",
 }: DashboardNavbarProps) {
   const initials = getInitials(userName);
 
@@ -41,12 +44,12 @@ export default function DashboardNavbar({
       <div className="hidden md:flex items-center gap-3 rounded-md border border-white/10 bg-white/5 px-3 py-1.5">
         <div className="text-right leading-tight">
           <p className="text-[10px] uppercase tracking-wider text-white">Hospital</p>
-          <p className="text-sm font-medium text-white">{hospital.name}</p>
+          <p className="text-sm font-medium text-white">{hospitalName}</p>
         </div>
         <div className="h-8 w-px bg-white/10" />
         <div className="text-left leading-tight">
           <p className="text-[10px] uppercase tracking-wider text-white">Hospital ID</p>
-          <p className="font-mono text-sm font-semibold tracking-wide text-white">{hospital.id}</p>
+          <p className="font-mono text-sm font-semibold tracking-wide text-white">{hospitalId}</p>
         </div>
       </div>
 

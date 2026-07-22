@@ -1,38 +1,8 @@
 import { NextResponse } from "next/server";
-import { existsSync, readFileSync } from "fs";
-import * as path from "path";
-import { cert, getApps, initializeApp } from "firebase-admin/app";
-import { getFirestore } from "firebase-admin/firestore";
+import { getFirestoreClient } from "@/lib/firebaseAdmin";
 
 export const runtime = "nodejs";
 
-const serviceAccountPath =
-  process.env.FIREBASE_SERVICE_ACCOUNT_PATH ||
-  path.join(process.cwd(), "ngems-62de5-firebase-adminsdk-fbsvc-338326775c.json");
-
-if (!getApps().length) {
-  if (existsSync(serviceAccountPath)) {
-    const serviceAccount = JSON.parse(readFileSync(serviceAccountPath, "utf8"));
-    initializeApp({
-      credential: cert(serviceAccount),
-      projectId: serviceAccount.project_id || process.env.FIREBASE_PROJECT_ID,
-    });
-  } else if (
-    process.env.FIREBASE_PROJECT_ID &&
-    process.env.FIREBASE_CLIENT_EMAIL &&
-    process.env.FIREBASE_PRIVATE_KEY
-  ) {
-    initializeApp({
-      credential: cert({
-        projectId: process.env.FIREBASE_PROJECT_ID,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n"),
-      }),
-    });
-  }
-}
-
-const firestore = getFirestore();
 const localHospitals: Array<Record<string, unknown>> = [];
 
 async function parseRequestBody(request: Request): Promise<Record<string, unknown>> {
@@ -86,9 +56,11 @@ export async function POST(request: Request) {
     }
 
     let userRecord: Record<string, unknown> | null = null;
+    let querySnapshot: any = null;
 
     try {
-      const querySnapshot = await firestore
+      const firestore = getFirestoreClient();
+      querySnapshot = await firestore
         .collection("hospitals")
         .where("hospitalId", "==", hospitalId)
         .where("adminUsername", "==", username)
@@ -96,7 +68,7 @@ export async function POST(request: Request) {
         .limit(1)
         .get();
 
-      if (!querySnapshot.empty) {
+      if (querySnapshot && !querySnapshot.empty) {
         userRecord = querySnapshot.docs[0].data();
       }
     } catch (firestoreError) {
@@ -119,12 +91,26 @@ export async function POST(request: Request) {
       );
     }
 
+    const resolvedHospitalName =
+      normalizeString(userRecord.hospitalName) ||
+      normalizeString(userRecord.name) ||
+      normalizeString(userRecord.hospital) ||
+      normalizeString(userRecord.hospitalType) ||
+      "Your hospital";
+
     const role = normalizeString(userRecord.role) ||
       (username === "admin" ? "Administrator" : "Hospital User");
 
     return NextResponse.json({
       success: true,
       hospitalId,
+      hospitalName: resolvedHospitalName,
+      hospitalType: normalizeString(userRecord.hospitalType) || "",
+      province: normalizeString(userRecord.province) || "",
+      district: normalizeString(userRecord.district) || "",
+      address: normalizeString(userRecord.address) || "",
+      contactNumber: normalizeString(userRecord.contactNumber) || "",
+      email: normalizeString(userRecord.email) || "",
       username,
       role,
     });

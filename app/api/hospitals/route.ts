@@ -1,65 +1,84 @@
 import { NextResponse } from "next/server";
-import { existsSync, readFileSync } from "fs";
-import * as path from "path";
-import { cert, getApps, initializeApp } from "firebase-admin/app";
-import { getFirestore } from "firebase-admin/firestore";
+import { getFirestoreClient } from "@/lib/firebaseAdmin";
 
 export const runtime = "nodejs";
 
-const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH || path.join(process.cwd(), "ngems-62de5-firebase-adminsdk-fbsvc-338326775c.json");
-
-if (!getApps().length) {
-  if (existsSync(serviceAccountPath)) {
-    const serviceAccount = JSON.parse(readFileSync(serviceAccountPath, "utf8"));
-    initializeApp({
-      credential: cert(serviceAccount),
-      projectId: serviceAccount.project_id || process.env.FIREBASE_PROJECT_ID,
-    });
-  } else if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
-    initializeApp({
-      credential: cert({
-        projectId: process.env.FIREBASE_PROJECT_ID,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n"),
-      }),
-    });
-  }
-}
-
-const firestore = getFirestore();
 const localHospitals: Array<Record<string, unknown>> = [];
 
 function parseRequestBody(request: Request) {
   return (async (): Promise<Record<string, unknown>> => {
     const contentType = request.headers.get("content-type") ?? "";
-    const body: Record<string, unknown> = {};
 
-    if (contentType.includes("application/json")) {
-      try {
-        const parsed = await request.json();
-        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-          return parsed as Record<string, unknown>;
-        }
-      } catch {
-        // fall back to text parsing if json() fails
-      }
+    if (contentType.includes("multipart/form-data")) {
+      const formData = await request.formData();
+      return Object.fromEntries(formData.entries()) as Record<string, unknown>;
     }
 
     const text = await request.text();
-    if (text) {
+    if (!text) return {};
+
+    try {
+      const parsed = JSON.parse(text);
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        return parsed as Record<string, unknown>;
+      }
+    } catch (e) {
       try {
-        const parsed = JSON.parse(text);
-        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-          return parsed as Record<string, unknown>;
+        let candidate = text
+          .replace(/([,{]\s*)([A-Za-z0-9_]+)\s*:/g, '$1"$2":')
+          .replace(/:\s*([^\",\[{\]\d\-\s][^,}\]]*)(?=[,}])/g, ':"$1"');
+        const parsed2 = JSON.parse(candidate);
+        if (parsed2 && typeof parsed2 === "object" && !Array.isArray(parsed2)) {
+          return parsed2 as Record<string, unknown>;
         }
-      } catch {
+      } catch (e2) {
+        // fall through to urlencoded parse
+      }
+
+      try {
         return Object.fromEntries(new URLSearchParams(text)) as Record<string, unknown>;
+      } catch (e2) {
+        return {};
       }
     }
-
-    const formData = await request.formData();
-    return Object.fromEntries(formData.entries()) as Record<string, unknown>;
+    return {};
   })();
+}
+
+export async function GET(request: Request) {
+  try {
+    const url = new URL(request.url);
+    const hospitalId = (url.searchParams.get("hospitalId") ?? "").trim();
+
+    if (!hospitalId) {
+      return NextResponse.json({ error: "Hospital ID is required." }, { status: 400 });
+    }
+
+    try {
+      const firestore = getFirestoreClient();
+      const querySnapshot = await firestore
+        .collection("hospitals")
+        .where("hospitalId", "==", hospitalId)
+        .limit(1)
+        .get();
+
+      if (!querySnapshot.empty) {
+        return NextResponse.json({ success: true, hospital: querySnapshot.docs[0].data() });
+      }
+    } catch (firestoreError) {
+      console.error("Firestore hospital lookup failed", firestoreError);
+    }
+
+    const fallbackRecord = localHospitals.find((record) => record.hospitalId === hospitalId);
+    if (fallbackRecord) {
+      return NextResponse.json({ success: true, hospital: fallbackRecord });
+    }
+
+    return NextResponse.json({ error: "Hospital not found." }, { status: 404 });
+  } catch (error) {
+    console.error("Hospital lookup failed", error);
+    return NextResponse.json({ error: "Failed to load hospital record." }, { status: 500 });
+  }
 }
 
 export async function POST(request: Request) {
@@ -89,6 +108,7 @@ export async function POST(request: Request) {
     };
 
     try {
+      const firestore = getFirestoreClient();
       const docRef = await firestore.collection("hospitals").add(record);
       return NextResponse.json({ success: true, id: docRef.id, hospitalId: body.hospitalId });
     } catch (firestoreError) {
