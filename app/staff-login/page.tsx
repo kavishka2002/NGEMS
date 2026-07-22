@@ -8,8 +8,6 @@ import Logo from "@/components/Logo";
 import Input from "@/components/Input";
 import PasswordInput from "@/components/PasswordInput";
 import Button from "@/components/Button";
-import DemoAccountsInfo from "@/components/DemoAccountsInfo";
-import { validateDemoAccount } from "@/lib/demo-accounts";
 
 type FormState = {
   hospitalId: string;
@@ -36,7 +34,7 @@ export default function StaffLoginPage() {
     return Object.keys(next).length === 0;
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setFormError(null);
     setSubmitting(true);
@@ -46,26 +44,55 @@ export default function StaffLoginPage() {
       return;
     }
 
-    // Validate demo account
-    const validation = validateDemoAccount(
-      form.hospitalId,
-      form.username,
-      form.password
-    );
+    try {
+      const response = await fetch("/api/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          hospitalId: form.hospitalId,
+          username: form.username,
+          password: form.password,
+        }),
+      });
 
-    if (validation.valid) {
-      // Route based on username/role
-      if (form.username === "reception") {
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Invalid credentials.");
+      }
+
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(
+          "ngemsHospitalSession",
+          JSON.stringify({
+            hospitalId: data.hospitalId,
+            hospitalName: data.hospitalName,
+            hospitalType: data.hospitalType,
+            province: data.province,
+            district: data.district,
+            address: data.address,
+            contactNumber: data.contactNumber,
+            email: data.email,
+            username: data.username,
+            role: data.role,
+          })
+        );
+      }
+
+      const role = String(data.role ?? "").toLowerCase();
+      if (role.includes("reception")) {
         router.push("/dashboard/reception");
-      } else if (form.username === "pharmacy") {
-        router.push("/pharmacy/dashboard");
-      } else if (form.username === "laboratory") {
+      } else if (role.includes("pharmacy")) {
+        router.push("/pharmacy");
+      } else if (role.includes("laboratory")) {
         router.push("/laboratory");
       } else {
         router.push("/dashboard");
       }
-    } else {
-      setFormError("Invalid credentials. Please use a demo account from the list below.");
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : "Unable to sign in.");
       setSubmitting(false);
     }
   };
@@ -172,7 +199,6 @@ export default function StaffLoginPage() {
               </div>
             </form>
 
-            <DemoAccountsInfo />
           </div>
 
           <p className="mt-6 text-center text-xs text-navy-300">

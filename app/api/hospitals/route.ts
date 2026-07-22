@@ -3,8 +3,6 @@ import { getFirestoreClient } from "@/lib/firebaseAdmin";
 
 export const runtime = "nodejs";
 
-const localHospitals: Array<Record<string, unknown>> = [];
-
 function parseRequestBody(request: Request) {
   return (async (): Promise<Record<string, unknown>> => {
     const contentType = request.headers.get("content-type") ?? "";
@@ -69,11 +67,6 @@ export async function GET(request: Request) {
       console.error("Firestore hospital lookup failed", firestoreError);
     }
 
-    const fallbackRecord = localHospitals.find((record) => record.hospitalId === hospitalId);
-    if (fallbackRecord) {
-      return NextResponse.json({ success: true, hospital: fallbackRecord });
-    }
-
     return NextResponse.json({ error: "Hospital not found." }, { status: 404 });
   } catch (error) {
     console.error("Hospital lookup failed", error);
@@ -112,9 +105,8 @@ export async function POST(request: Request) {
       const docRef = await firestore.collection("hospitals").add(record);
       return NextResponse.json({ success: true, id: docRef.id, hospitalId: body.hospitalId });
     } catch (firestoreError) {
-      console.error("Firestore write failed, falling back to local storage", firestoreError);
-      localHospitals.push(record);
-      return NextResponse.json({ success: true, id: localHospitals.length, hospitalId: body.hospitalId, fallback: true });
+      console.error("Firestore write failed", firestoreError);
+      return NextResponse.json({ error: "Failed to save hospital registration to database." }, { status: 500 });
     }
   } catch (error) {
     console.error("Hospital registration save failed", error);

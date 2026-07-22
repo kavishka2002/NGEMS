@@ -17,11 +17,11 @@ export default function HospitalIdField({ value }: HospitalIdFieldProps) {
             <path d="M12 2 20 6v6c0 5-3.6 8.6-8 10-4.4-1.4-8-5-8-10V6l8-4Z" stroke="currentColor" strokeWidth="1.8" />
             <path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
-          <span className="font-mono text-[15px] font-semibold tracking-[0.08em] text-navy-800">
+          <span className="font-mono text-[15px] font-semibold tracking-[0.08em] text-seal-700">
             {value}
           </span>
         </div>
-        <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-seal-600">
+        <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-seal-700">
           Pending
         </span>
       </div>
