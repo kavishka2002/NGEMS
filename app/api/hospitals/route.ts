@@ -3,37 +3,48 @@ import { getFirestoreClient } from "@/lib/firebaseAdmin";
 
 export const runtime = "nodejs";
 
-function parseRequestBody(request: Request) {
-  return (async (): Promise<Record<string, unknown>> => {
-    const contentType = request.headers.get("content-type") ?? "";
+async function parseRequestBody(
+  request: Request
+): Promise<Record<string, unknown>> {
+  const contentType = request.headers.get("content-type") ?? "";
 
-<<<<<<< HEAD
-=======
-    // For multipart form-data we must use formData() and must not read text()
->>>>>>> 3770824df43eb5c39c306a14c3dfa59b3a45ec11
-    if (contentType.includes("multipart/form-data")) {
-      const formData = await request.formData();
-      return Object.fromEntries(formData.entries()) as Record<string, unknown>;
+  // Handle multipart form-data
+  if (contentType.includes("multipart/form-data")) {
+    const formData = await request.formData();
+    return Object.fromEntries(formData.entries()) as Record<string, unknown>;
+  }
+
+  // Read body once
+  const text = await request.text();
+
+  try {
+    console.debug("[api/hospitals] content-type:", contentType);
+    console.debug("[api/hospitals] body length:", text.length);
+  } catch {}
+
+  if (!text) return {};
+
+  try {
+    const parsed = JSON.parse(text);
+
+    if (
+      parsed &&
+      typeof parsed === "object" &&
+      !Array.isArray(parsed)
+    ) {
+      return parsed as Record<string, unknown>;
     }
-
-<<<<<<< HEAD
-    const text = await request.text();
-=======
-    // Read the body as text exactly once, then attempt to parse
-    const text = await request.text();
-    // Debug logging to help diagnose unexpected empty bodies in dev
+  } catch {
+    // Try to convert JS object literal into JSON
     try {
-      console.debug("[api/hospitals] content-type:", contentType);
-      console.debug("[api/hospitals] body text length:", text?.length ?? 0);
-      console.debug("[api/hospitals] body text (truncated):", text ? text.substring(0, 1000) : "")
-    } catch (e) {
-      /* ignore logging errors */
-    }
->>>>>>> 3770824df43eb5c39c306a14c3dfa59b3a45ec11
-    if (!text) return {};
+      const candidate = text
+        .replace(/([,{]\s*)([A-Za-z0-9_]+)\s*:/g, '$1"$2":')
+        .replace(
+          /:\s*([^",\[\{\]\d\-\s][^,}\]]*)(?=[,}])/g,
+          ':"$1"'
+        );
 
-    try {
-      const parsed = JSON.parse(text);
+      const parsed = JSON.parse(candidate);
 
       if (
         parsed &&
@@ -42,104 +53,68 @@ function parseRequestBody(request: Request) {
       ) {
         return parsed as Record<string, unknown>;
       }
-    } catch (e) {
-<<<<<<< HEAD
-      try {
-        let candidate = text
-          .replace(/([,{]\s*)([A-Za-z0-9_]+)\s*:/g, '$1"$2":')
-          .replace(/:\s*([^\",\[{\]\d\-\s][^,}\]]*)(?=[,}])/g, ':"$1"');
-=======
-      // not JSON — try to coerce common JS-style object literals like
-      // {hospitalId:TEST-999,hospitalName:Test Clinic} into valid JSON
-      try {
-        let candidate = text
-          .replace(/([,{]\s*)([A-Za-z0-9_]+)\s*:/g, '$1"$2":')
-          .replace(/:\s*([^",\[{\]\d\-\s][^,}\]]*)(?=[,}])/g, ':"$1"');
->>>>>>> 3770824df43eb5c39c306a14c3dfa59b3a45ec11
-        const parsed2 = JSON.parse(candidate);
-        if (parsed2 && typeof parsed2 === "object" && !Array.isArray(parsed2)) {
-          return parsed2 as Record<string, unknown>;
-        }
-      } catch (e2) {
-        // fall through to urlencoded parse
-      }
+    } catch {}
 
-      try {
-        return Object.fromEntries(new URLSearchParams(text)) as Record<string, unknown>;
-      } catch (e2) {
-        return {};
-      }
+    // Try URL encoded form
+    try {
+      return Object.fromEntries(
+        new URLSearchParams(text)
+      ) as Record<string, unknown>;
+    } catch {
+      return {};
     }
-    return {};
-  })();
+  }
+
+  return {};
 }
 
-<<<<<<< HEAD
 export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
-    const hospitalId = (
-      url.searchParams.get("hospitalId") ?? ""
-    ).trim();
+    const hospitalId =
+      url.searchParams.get("hospitalId")?.trim() ?? "";
 
     if (!hospitalId) {
       return NextResponse.json(
-        {
-          error: "Hospital ID is required.",
-        },
-        {
-          status: 400,
-        }
+        { error: "Hospital ID is required." },
+        { status: 400 }
       );
     }
 
-    try {
-      const firestore = getFirestoreClient();
-      const querySnapshot = await firestore
-        .collection("hospitals")
-        .where("hospitalId", "==", hospitalId)
-        .limit(1)
-        .get();
+    const firestore = getFirestoreClient();
 
-      if (!querySnapshot.empty) {
-        return NextResponse.json({ success: true, hospital: querySnapshot.docs[0].data() });
-      }
-    } catch (firestoreError) {
-      console.error("Firestore hospital lookup failed", firestoreError);
+    const snapshot = await firestore
+      .collection("hospitals")
+      .where("hospitalId", "==", hospitalId)
+      .limit(1)
+      .get();
+
+    if (snapshot.empty) {
+      return NextResponse.json(
+        { error: "Hospital not found." },
+        { status: 404 }
+      );
     }
 
-    return NextResponse.json(
-      {
-        error: "Hospital not found.",
-      },
-      {
-        status: 404,
-      }
-    );
+    return NextResponse.json({
+      success: true,
+      hospital: snapshot.docs[0].data(),
+    });
   } catch (error) {
-    console.error(
-      "Hospital lookup failed:",
-      error
-    );
+    console.error("Hospital lookup failed:", error);
 
     return NextResponse.json(
-      {
-        error: "Failed to load hospital record.",
-      },
-      {
-        status: 500,
-      }
+      { error: "Failed to load hospital record." },
+      { status: 500 }
     );
   }
 }
 
-=======
->>>>>>> 3770824df43eb5c39c306a14c3dfa59b3a45ec11
 export async function POST(request: Request) {
   try {
     const body = await parseRequestBody(request);
 
-    if (!body?.hospitalId || !body?.hospitalName) {
+    if (!body.hospitalId || !body.hospitalName) {
       return NextResponse.json(
         {
           error:
@@ -170,37 +145,17 @@ export async function POST(request: Request) {
         body.createdAt || new Date().toISOString(),
     };
 
-    try {
-      const firestore = getFirestoreClient();
+    const firestore = getFirestoreClient();
 
-      const docRef = await firestore
-        .collection("hospitals")
-        .add(record);
+    const docRef = await firestore
+      .collection("hospitals")
+      .add(record);
 
-      return NextResponse.json({
-        success: true,
-        id: docRef.id,
-        hospitalId: body.hospitalId,
-      });
-    } catch (firestoreError) {
-      console.error("Firestore write failed", firestoreError);
-      return NextResponse.json({ error: "Failed to save hospital registration to database." }, { status: 500 });
-=======
-    if (firestore) {
-      try {
-        const docRef = await firestore.collection("hospitals").add(record);
-        return NextResponse.json({ success: true, id: docRef.id, hospitalId: body.hospitalId });
-      } catch (firestoreError) {
-        console.error("Firestore write failed, falling back to local storage", firestoreError);
-        localHospitals.push(record);
-        return NextResponse.json({ success: true, id: localHospitals.length, hospitalId: body.hospitalId, fallback: true });
-      }
-    } else {
-      // Firestore not available; persist in-memory for local development
-      localHospitals.push(record);
-      return NextResponse.json({ success: true, id: localHospitals.length, hospitalId: body.hospitalId, fallback: true });
->>>>>>> 3770824df43eb5c39c306a14c3dfa59b3a45ec11
-    }
+    return NextResponse.json({
+      success: true,
+      id: docRef.id,
+      hospitalId: body.hospitalId,
+    });
   } catch (error) {
     console.error(
       "Hospital registration save failed:",

@@ -219,12 +219,13 @@ export default function CreateStaffPage() {
 
       const payload = {
         ...form,
-        employeeId, // Add the calculated employee ID
-        hospitalId: "HOS-0001", // This should come from context/session
+        employeeId,
+        hospitalId: "HOS-0001",
         hospitalName: "National Hospital Colombo",
-        photoBase64,
-        createdBy: "Admin User", // This should come from authenticated user
+        photoBase64: photoBase64 || undefined,
+        createdBy: "Admin User",
       };
+
 
       const response = await createStaffAccount(payload);
 
