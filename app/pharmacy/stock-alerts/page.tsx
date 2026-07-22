@@ -2,61 +2,39 @@
 
 import PharmacyNavbar from "@/components/pharmacy/PharmacyNavbar";
 import PharmacySidebar from "@/components/pharmacy/PharmacySidebar";
+import { useEffect, useState } from "react";
 import { AlertCircle, TrendingDown, Package } from "lucide-react";
 import Link from "next/link";
+import * as service from "@/lib/pharmacy-service";
 
 interface StockAlert {
   id: string;
-  medicineName: string;
-  currentStock: number;
-  minimumStock: number;
-  unit: string;
-  severity: "critical" | "warning";
-  lastUpdated: string;
+  name: string;
+  quantity: number;
+  minQty: number;
+  unit?: string;
+  status?: string;
+  updatedAt?: string;
 }
 
-const mockAlerts: StockAlert[] = [
-  {
-    id: "1",
-    medicineName: "Amoxicillin 500mg",
-    currentStock: 15,
-    minimumStock: 50,
-    unit: "boxes",
-    severity: "critical",
-    lastUpdated: "2025-07-10 09:30",
-  },
-  {
-    id: "2",
-    medicineName: "Cough Syrup 100ml",
-    currentStock: 8,
-    minimumStock: 30,
-    unit: "bottles",
-    severity: "critical",
-    lastUpdated: "2025-07-10 10:15",
-  },
-  {
-    id: "3",
-    medicineName: "Ibuprofen 200mg",
-    currentStock: 45,
-    minimumStock: 100,
-    unit: "tablets",
-    severity: "warning",
-    lastUpdated: "2025-07-10 08:45",
-  },
-  {
-    id: "4",
-    medicineName: "Paracetamol 500mg",
-    currentStock: 35,
-    minimumStock: 75,
-    unit: "tablets",
-    severity: "warning",
-    lastUpdated: "2025-07-09 14:20",
-  },
-];
-
 export default function StockAlertsPage() {
-  const criticalCount = mockAlerts.filter((a) => a.severity === "critical").length;
-  const warningCount = mockAlerts.filter((a) => a.severity === "warning").length;
+  const [alerts, setAlerts] = useState<StockAlert[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    service.getStockAlerts().then((data) => {
+      if (mounted) setAlerts(data);
+    }).catch((err) => {
+      console.error('Failed to load stock alerts', err);
+    }).finally(() => {
+      if (mounted) setLoading(false);
+    });
+    return () => { mounted = false; };
+  }, []);
+
+  const criticalCount = alerts.filter((a) => (a.quantity || 0) <= (a.minQty || 0)).length;
+  const warningCount = alerts.filter((a) => (a.quantity || 0) > (a.minQty || 0) && (a.quantity || 0) <= ((a.minQty || 0) * 1.5)).length;
 
   return (
     <div className="flex h-screen bg-slate-50">
@@ -147,40 +125,46 @@ export default function StockAlertsPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-border">
-                    {mockAlerts.map((alert) => (
-                      <tr key={alert.id} className="hover:bg-slate-50">
-                        <td className="px-6 py-4 text-sm font-medium text-navy">{alert.medicineName}</td>
-                        <td className="px-6 py-4 text-sm text-navy/70">
-                          {alert.currentStock} {alert.unit}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-navy/70">
-                          {alert.minimumStock} {alert.unit}
-                        </td>
-                        <td className="px-6 py-4">
-                          <span
-                            className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ${
-                              alert.currentStock < alert.minimumStock / 2
-                                ? "bg-red-100 text-red-700"
-                                : "bg-yellow-100 text-yellow-700"
-                            }`}
-                          >
-                            -{alert.minimumStock - alert.currentStock} {alert.unit}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span
-                            className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ${
-                              alert.severity === "critical"
-                                ? "bg-red-100 text-red-700"
-                                : "bg-yellow-100 text-yellow-700"
-                            }`}
-                          >
-                            {alert.severity === "critical" ? "🔴" : "🟡"} {alert.severity.toUpperCase()}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-xs text-navy/60">{alert.lastUpdated}</td>
+                    {loading ? (
+                      <tr>
+                        <td colSpan={6} className="px-6 py-8 text-center text-slate-500">Loading stock alerts...</td>
                       </tr>
-                    ))}
+                    ) : alerts.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="px-6 py-8 text-center text-slate-500">No low stock items found.</td>
+                      </tr>
+                    ) : (
+                      alerts.map((alert) => (
+                        <tr key={alert.id} className="hover:bg-slate-50">
+                          <td className="px-6 py-4 text-sm font-medium text-navy">{alert.name || 'Unknown'}</td>
+                          <td className="px-6 py-4 text-sm text-navy/70">{alert.quantity ?? 0} {alert.unit || ''}</td>
+                          <td className="px-6 py-4 text-sm text-navy/70">{alert.minQty ?? 0} {alert.unit || ''}</td>
+                          <td className="px-6 py-4">
+                            <span
+                              className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ${
+                                (alert.quantity ?? 0) < ((alert.minQty ?? 0) / 2)
+                                  ? "bg-red-100 text-red-700"
+                                  : "bg-yellow-100 text-yellow-700"
+                              }`}
+                            >
+                              -{Math.max((alert.minQty ?? 0) - (alert.quantity ?? 0), 0)} {alert.unit || ''}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span
+                              className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ${
+                                (alert.quantity ?? 0) <= ((alert.minQty ?? 0) / 2)
+                                  ? "bg-red-100 text-red-700"
+                                  : "bg-yellow-100 text-yellow-700"
+                              }`}
+                            >
+                              {(alert.quantity ?? 0) <= ((alert.minQty ?? 0) / 2) ? "🔴" : "🟡"} {((alert.quantity ?? 0) <= ((alert.minQty ?? 0) / 2) ? 'CRITICAL' : 'WARNING')}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-xs text-navy/60">{alert.updatedAt?.slice(0, 16) || '-'}</td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>

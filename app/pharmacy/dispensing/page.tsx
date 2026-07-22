@@ -1,12 +1,29 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import PharmacyNavbar from "@/components/pharmacy/PharmacyNavbar";
 import PharmacySidebar from "@/components/pharmacy/PharmacySidebar";
 import Button from "@/components/Button";
 import { Plus, Search } from "lucide-react";
 import Link from "next/link";
+import * as service from "@/lib/pharmacy-service";
 
 export default function DispensingPage() {
+  const [dispensing, setDispensing] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    service.getDispensing().then((data) => {
+      if (mounted) setDispensing(data);
+    }).catch((err) => {
+      console.error('Failed to load dispensing records', err);
+    }).finally(() => {
+      if (mounted) setLoading(false);
+    });
+    return () => { mounted = false; };
+  }, []);
+
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-slate-50">
       <PharmacyNavbar />
@@ -51,8 +68,35 @@ export default function DispensingPage() {
 
           {/* Dispensing Content */}
           <div className="rounded-lg bg-white shadow-sm border border-slate-border p-6">
-            <div className="text-center py-12">
-              <p className="text-navy/60 mb-4">Dispensing records will be displayed here</p>
+            {loading ? (
+              <div className="text-center py-12 text-slate-500">Loading dispensing records...</div>
+            ) : dispensing.length === 0 ? (
+              <div className="text-center py-12 text-slate-500">No dispensing records found.</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-border bg-slate-50">
+                      <th className="px-4 py-3 text-left font-semibold text-navy">Prescription ID</th>
+                      <th className="px-4 py-3 text-left font-semibold text-navy">Items</th>
+                      <th className="px-4 py-3 text-left font-semibold text-navy">Performed By</th>
+                      <th className="px-4 py-3 text-left font-semibold text-navy">Date</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-border">
+                    {dispensing.map((record) => (
+                      <tr key={record.id} className="hover:bg-slate-50">
+                        <td className="px-4 py-3 text-sm text-slate-700">{record.prescriptionId}</td>
+                        <td className="px-4 py-3 text-sm text-slate-700">{(record.items || []).map((item: any) => item.name || item).join(', ')}</td>
+                        <td className="px-4 py-3 text-sm text-slate-700">{record.performedBy || '-'}</td>
+                        <td className="px-4 py-3 text-sm text-slate-700">{record.createdAt?.slice(0, 10) || '-'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            <div className="mt-6 text-center">
               <Link href="/pharmacy/dashboard">
                 <Button type="button" variant="secondary" className="px-4 py-2 text-sm">
                   Back to Dashboard
