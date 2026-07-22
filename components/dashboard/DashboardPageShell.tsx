@@ -86,7 +86,12 @@ export default function DashboardPageShell() {
 
   const currentHospital = {
     hospitalId: hospital?.hospitalId || session?.hospitalId || "NGEMS-HOS-2026-000000",
-    hospitalName: hospital?.hospitalName || session?.hospitalName || "Your hospital",
+    hospitalName:
+      hospital?.hospitalName ||
+      hospital?.name ||
+      session?.hospitalName ||
+      session?.name ||
+      "Your hospital",
     hospitalType: hospital?.hospitalType || session?.hospitalType || "",
     province: hospital?.province || session?.province || "",
     district: hospital?.district || session?.district || "",

@@ -91,13 +91,20 @@ export async function POST(request: Request) {
       );
     }
 
+    const resolvedHospitalName =
+      normalizeString(userRecord.hospitalName) ||
+      normalizeString(userRecord.name) ||
+      normalizeString(userRecord.hospital) ||
+      normalizeString(userRecord.hospitalType) ||
+      "Your hospital";
+
     const role = normalizeString(userRecord.role) ||
       (username === "admin" ? "Administrator" : "Hospital User");
 
     return NextResponse.json({
       success: true,
       hospitalId,
-      hospitalName: normalizeString(userRecord.hospitalName) || "",
+      hospitalName: resolvedHospitalName,
       hospitalType: normalizeString(userRecord.hospitalType) || "",
       province: normalizeString(userRecord.province) || "",
       district: normalizeString(userRecord.district) || "",

@@ -20,7 +20,7 @@ type ProfileCardProps = {
 
 export default function ProfileCard({ hospital }: ProfileCardProps) {
   const profile = {
-    name: hospital?.hospitalName || defaultHospital.name,
+    name: hospital?.hospitalName || hospital?.name || defaultHospital.name,
     id: hospital?.hospitalId || defaultHospital.id,
     type: hospital?.hospitalType || defaultHospital.type,
     province: hospital?.province || defaultHospital.province,
