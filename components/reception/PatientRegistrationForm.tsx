@@ -74,6 +74,7 @@ export default function PatientRegistrationForm({ onCheckExisting }: PatientRegi
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
   const [submitting, setSubmitting] = useState(false);
   const [successId, setSuccessId] = useState<string | null>(null);
+  const [serverError, setServerError] = useState<string | null>(null);
 
   const update = (key: keyof FormState) => (e: any) =>
     setForm((f) => ({ ...f, [key]: e.target.value }));
@@ -105,16 +106,54 @@ export default function PatientRegistrationForm({ onCheckExisting }: PatientRegi
     return Object.keys(next).length === 0;
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setSuccessId(null);
+    setServerError(null);
+
     if (!validate()) return;
 
+    const rawSession = typeof window !== "undefined" ? window.localStorage.getItem("ngemsHospitalSession") : null;
+    if (!rawSession) {
+      setServerError("Hospital session is missing. Please log in again.");
+      return;
+    }
+
+    const session = JSON.parse(rawSession) as { hospitalId?: string; hospitalName?: string };
+    if (!session?.hospitalId || !session?.hospitalName) {
+      setServerError("Hospital session is incomplete. Please log in again.");
+      return;
+    }
+
     setSubmitting(true);
-    setTimeout(() => {
+
+    try {
+      const response = await fetch("/api/patients", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          hospitalId: session.hospitalId,
+          hospitalName: session.hospitalName,
+          ...form,
+        }),
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        setServerError(result.error || "Patient registration failed.");
+        return;
+      }
+
+      setSuccessId(result.patient?.patientId || result.patientId || "Registered");
+      setForm(initialState);
+    } catch (error) {
+      console.error("Registration failed", error);
+      setServerError("Failed to register patient. Please try again.");
+    } finally {
       setSubmitting(false);
-      setSuccessId(nextPatientId());
-    }, 900);
+    }
   };
 
   const handleClear = () => {
@@ -140,6 +179,12 @@ export default function PatientRegistrationForm({ onCheckExisting }: PatientRegi
           </div>
         </div>
       </div>
+
+      {serverError && (
+        <div className="mb-6 rounded-lg border border-rose-100 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          {serverError}
+        </div>
+      )}
 
       {successId && (
         <div className="mb-6 flex items-start gap-2.5 rounded-lg border border-health-100 bg-health-50 px-4 py-3 animate-fade-in">

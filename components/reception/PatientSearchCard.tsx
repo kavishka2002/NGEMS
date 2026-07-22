@@ -5,7 +5,7 @@ import { Search, X, ScanSearch } from "lucide-react";
 import Select from "@/components/Select";
 import Input from "@/components/Input";
 import Button from "@/components/Button";
-import { DEMO_KEYS, DEMO_RECORD, PatientRecord } from "@/lib/reception-data";
+import { PatientRecord } from "@/lib/reception-data";
 
 const SEARCH_BY_OPTIONS = ["Patient ID", "NIC Number", "Passport Number", "Mobile Number"];
 
@@ -19,20 +19,44 @@ export default function PatientSearchCard({ onResult }: PatientSearchCardProps) 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const handleSearch = () => {
+  const handleSearch = async () => {
     if (!query.trim()) {
       setError("Enter a value to search.");
       return;
     }
+
     setError("");
     setLoading(true);
 
-    // UI-only demo: simulate a registry lookup.
-    setTimeout(() => {
+    try {
+      const rawSession = typeof window !== "undefined" ? window.localStorage.getItem("ngemsHospitalSession") : null;
+      const hospitalId = rawSession ? (JSON.parse(rawSession) as { hospitalId?: string })?.hospitalId : "";
+
+      if (!hospitalId) {
+        setError("Hospital session not found. Please log in again.");
+        onResult(null, true);
+        return;
+      }
+
+      const params = new URLSearchParams({ hospitalId, query: query.trim() });
+      if (searchBy) params.set("searchBy", searchBy);
+      const response = await fetch(`/api/patients?${params.toString()}`);
+      const payload = await response.json();
+
+      if (!response.ok) {
+        setError(payload?.error || "Patient search failed.");
+        onResult(null, true);
+        return;
+      }
+
+      onResult(payload.patient as PatientRecord, true);
+    } catch (error) {
+      console.error("Patient search failed", error);
+      setError("Patient search failed. Try again later.");
+      onResult(null, true);
+    } finally {
       setLoading(false);
-      const match = DEMO_KEYS.includes(query.trim()) ? DEMO_RECORD : null;
-      onResult(match, true);
-    }, 700);
+    }
   };
 
   const handleClear = () => {
