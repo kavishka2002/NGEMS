@@ -65,6 +65,24 @@ export default function LoginPage() {
         throw new Error(data.error || "Invalid credentials.");
       }
 
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(
+          "ngemsHospitalSession",
+          JSON.stringify({
+            hospitalId: data.hospitalId,
+            hospitalName: data.hospitalName,
+            hospitalType: data.hospitalType,
+            province: data.province,
+            district: data.district,
+            address: data.address,
+            contactNumber: data.contactNumber,
+            email: data.email,
+            username: data.username,
+            role: data.role,
+          })
+        );
+      }
+
       if (form.username === "reception") {
         router.push("/dashboard/reception");
       } else if (form.username === "pharmacy") {
