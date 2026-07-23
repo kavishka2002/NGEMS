@@ -72,6 +72,124 @@ export const diseaseStats = [
   { disease: "Renal", cases: 140 },
 ];
 
+export const doctor = {
+  name: "Dr. Kasun Perera",
+  specialization: "Consultant Physician",
+  status: "Available",
+};
+
+export const patients = [
+  {
+    id: "PAT-100245",
+    name: "Nimali Fernando",
+    age: 42,
+    gender: "Female",
+    phone: "+94 77 123 4567",
+    nic: "199514567V",
+    lastVisit: "18 Jul 2026",
+    diagnosis: "Hypertension",
+    status: "Active",
+    blood: "O+",
+    allergies: "None",
+    medication: "Amlodipine 5mg",
+  },
+  {
+    id: "PAT-100246",
+    name: "Saman Kumara",
+    age: 58,
+    gender: "Male",
+    phone: "+94 77 765 4321",
+    nic: "197823456A",
+    lastVisit: "20 Jul 2026",
+    diagnosis: "Type 2 Diabetes",
+    status: "Follow-up",
+    blood: "A+",
+    allergies: "Penicillin",
+    medication: "Metformin 500mg",
+  },
+  {
+    id: "PAT-100247",
+    name: "Tharushi Silva",
+    age: 29,
+    gender: "Female",
+    phone: "+94 71 987 6543",
+    nic: "200315678V",
+    lastVisit: "19 Jul 2026",
+    diagnosis: "Migraine",
+    status: "Waiting",
+    blood: "B+",
+    allergies: "None",
+    medication: "Paracetamol",
+  },
+];
+
+export const queue = [
+  { no: "Q-01", patient: "Nimali Fernando", id: "PAT-100245", age: 42, gender: "Female", time: "08:30", reason: "Blood pressure review", priority: "Urgent", status: "Waiting" },
+  { no: "Q-02", patient: "Saman Kumara", id: "PAT-100246", age: 58, gender: "Male", time: "09:15", reason: "Diabetes follow-up", priority: "Normal", status: "Called" },
+  { no: "Q-03", patient: "Tharushi Silva", id: "PAT-100247", age: 29, gender: "Female", time: "10:00", reason: "Headache assessment", priority: "Waiting", status: "In Consultation" },
+  { no: "Q-04", patient: "Mohamed Rizwan", id: "PAT-100248", age: 35, gender: "Male", time: "10:45", reason: "Chest pain", priority: "Emergency", status: "Waiting" },
+];
+
+export const appointments = [
+  { id: "APT-2026-001", patient: "Nimali Fernando", patientId: "PAT-100245", date: "22 Jul 2026", time: "08:30", type: "Follow-up", reason: "Blood pressure review", status: "Confirmed" },
+  { id: "APT-2026-002", patient: "Saman Kumara", patientId: "PAT-100246", date: "22 Jul 2026", time: "09:15", type: "Routine", reason: "Diabetes check", status: "Confirmed" },
+  { id: "APT-2026-003", patient: "Tharushi Silva", patientId: "PAT-100247", date: "22 Jul 2026", time: "10:00", type: "Urgent", reason: "Migraine review", status: "Pending" },
+];
+
+export const notifications = [
+  { id: "N-01", title: "Lab results ready for Nimali Fernando", description: "View the new report in Laboratory.", time: "2 min ago", unread: true },
+  { id: "N-02", title: "Appointment confirmed for Saman Kumara", description: "09:15 follow-up confirmed.", time: "10 min ago", unread: false },
+  { id: "N-03", title: "New patient registration pending review", description: "Review patient details before consultation.", time: "30 min ago", unread: false },
+];
+
+export const prescriptions = [
+  { id: "RX-2026-001", patient: "Nimali Fernando", patientId: "PAT-100245", medication: "Amlodipine", dosage: "5mg", frequency: "Once daily", prescribedBy: "Dr. Kasun Perera", date: "18 Jul 2026", status: "Active" },
+  { id: "RX-2026-002", patient: "Saman Kumara", patientId: "PAT-100246", medication: "Metformin", dosage: "500mg", frequency: "Twice daily", prescribedBy: "Dr. Kasun Perera", date: "20 Jul 2026", status: "Active" },
+  { id: "RX-2026-003", patient: "Tharushi Silva", patientId: "PAT-100247", medication: "Paracetamol", dosage: "500mg", frequency: "As needed", prescribedBy: "Dr. Kasun Perera", date: "19 Jul 2026", status: "Review" },
+];
+
+export const laboratoryTests = [
+  { id: "LAB-001", patient: "Nimali Fernando", patientId: "PAT-100245", test: "Full blood count", result: "Normal", status: "Completed", date: "18 Jul 2026" },
+  { id: "LAB-002", patient: "Saman Kumara", patientId: "PAT-100246", test: "HbA1c", result: "8.1%", status: "Completed", date: "20 Jul 2026" },
+  { id: "LAB-003", patient: "Tharushi Silva", patientId: "PAT-100247", test: "Electrolytes", result: "Slightly low potassium", status: "Review", date: "19 Jul 2026" },
+];
+
+export const radiologyReports = [
+  { id: "RAD-1001", patient: "Mohamed Rizwan", patientId: "PAT-100248", study: "Chest X-ray", findings: "Suspicious infiltrate in left lower lobe", status: "Available", date: "22 Jul 2026" },
+  { id: "RAD-1002", patient: "Nimali Fernando", patientId: "PAT-100245", study: "Abdominal ultrasound", findings: "Mild hepatomegaly", status: "Pending", date: "21 Jul 2026" },
+];
+
+export const admissions = [
+  { admissionId: "ADM-101", patient: "Nimali Fernando", patientId: "PAT-100245", ward: "Medical Ward 5", bed: "B12", admittedOn: "18 Jul 2026", reason: "Hypertension review", status: "Stable" },
+  { admissionId: "ADM-102", patient: "Saman Kumara", patientId: "PAT-100246", ward: "Endocrine Ward", bed: "E03", admittedOn: "20 Jul 2026", reason: "Diabetes monitoring", status: "Under observation" },
+];
+
+export const referrals = [
+  { id: "REF-110", patient: "Tharushi Silva", patientId: "PAT-100247", referredTo: "Neurology", reason: "Recurrent migraine", status: "Sent", date: "19 Jul 2026" },
+  { id: "REF-111", patient: "Mohamed Rizwan", patientId: "PAT-100248", referredTo: "Cardiology", reason: "Chest pain evaluation", status: "Pending", date: "22 Jul 2026" },
+];
+
+export const medicalNotes = [
+  { id: "NOTE-001", patient: "Nimali Fernando", patientId: "PAT-100245", note: "Continue antihypertensive therapy and follow up in 1 week.", author: "Dr. Kasun Perera", date: "18 Jul 2026" },
+  { id: "NOTE-002", patient: "Saman Kumara", patientId: "PAT-100246", note: "Increase exercise and adjust Metformin if glucose remains elevated.", author: "Dr. Kasun Perera", date: "20 Jul 2026" },
+];
+
+export const schedule = [
+  { id: "SCH-01", date: "22 Jul 2026", time: "08:30", type: "Morning Clinic", patient: "Nimali Fernando", status: "Confirmed" },
+  { id: "SCH-02", date: "22 Jul 2026", time: "09:15", type: "Consultation", patient: "Saman Kumara", status: "Confirmed" },
+  { id: "SCH-03", date: "22 Jul 2026", time: "10:00", type: "Urgent Review", patient: "Tharushi Silva", status: "Pending" },
+];
+
+export const doctorProfile = {
+  name: "Dr. Kasun Perera",
+  specialization: "Consultant Physician",
+  department: "Internal Medicine",
+  email: "kasun.perera@nhc.health.gov.lk",
+  phone: "+94 77 222 3344",
+  experience: "12 years",
+  status: "Available",
+};
+
 export const sidebarSections = [
   {
     label: "Overview",

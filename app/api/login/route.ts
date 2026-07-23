@@ -46,9 +46,51 @@ export async function POST(request: Request) {
     const username = normalizeString(body.username);
     const password = normalizeString(body.password);
 
-    if (!hospitalId || !username || !password) {
+    if (!username || !password) {
       return NextResponse.json(
-        { error: "Hospital ID, username, and password are required." },
+        { error: "Username and password are required." },
+        { status: 400 }
+      );
+    }
+
+    // First try doctor authentication using only username/password
+    try {
+      const firestore = getFirestoreClient();
+
+      // search doctors collection for matching username/password
+      const doctorQuery = await firestore
+        .collection("doctors")
+        .where("username", "==", username)
+        .where("password", "==", password)
+        .limit(1)
+        .get();
+
+      if (doctorQuery && !doctorQuery.empty) {
+        const doctorRecord = doctorQuery.docs[0].data();
+        const doctorHospitalId = normalizeString(doctorRecord.hospitalId) || hospitalId;
+
+        return NextResponse.json({
+          success: true,
+          hospitalId: doctorHospitalId,
+          hospitalName: normalizeString(doctorRecord.hospitalName) || normalizeString(doctorRecord.hospital) || "Your hospital",
+          hospitalType: normalizeString(doctorRecord.hospitalType) || "",
+          province: normalizeString(doctorRecord.province) || "",
+          district: normalizeString(doctorRecord.district) || "",
+          address: normalizeString(doctorRecord.address) || "",
+          contactNumber: normalizeString(doctorRecord.contactNumber) || "",
+          email: normalizeString(doctorRecord.email) || "",
+          username,
+          role: normalizeString(doctorRecord.role) || "Doctor",
+        });
+      }
+    } catch (docLookupError) {
+      console.error("Firestore doctor lookup failed", docLookupError);
+    }
+
+    // Fallback: require hospitalId for hospital admin/staff login
+    if (!hospitalId) {
+      return NextResponse.json(
+        { error: "Hospital ID is required for hospital/staff login." },
         { status: 400 }
       );
     }
