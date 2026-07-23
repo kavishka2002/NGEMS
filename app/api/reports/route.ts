@@ -13,7 +13,7 @@ export async function GET(request: Request) {
     const db = getFirestoreClient();
 
     // Simple summary report: counts
-    const [presSnap, dispSnap, invSnap, prescSnap] = await Promise.all([
+    const [presSnap, dispSnap, invSnap, patientSnap] = await Promise.all([
       db.collection('prescriptions').where('hospitalId','==',hospitalId).get(),
       db.collection('dispensing').where('hospitalId','==',hospitalId).get(),
       db.collection('inventory').where('hospitalId','==',hospitalId).get(),
@@ -24,7 +24,7 @@ export async function GET(request: Request) {
       prescriptions: presSnap.size,
       dispensings: dispSnap.size,
       inventoryItems: invSnap.size,
-      patients: prescSnap.size,
+      patients: patientSnap.size,
     };
 
     return NextResponse.json({ success:true, report });

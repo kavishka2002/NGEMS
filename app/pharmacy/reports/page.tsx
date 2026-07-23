@@ -3,67 +3,18 @@
 import PharmacyNavbar from "@/components/pharmacy/PharmacyNavbar";
 import PharmacySidebar from "@/components/pharmacy/PharmacySidebar";
 import { FileText, Download, Calendar, Filter } from "lucide-react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-
-interface Report {
-  id: string;
-  name: string;
-  type: string;
-  generatedDate: string;
-  period: string;
-  status: "ready" | "generating" | "failed";
-  size: string;
-}
-
-const mockReports: Report[] = [
-  {
-    id: "1",
-    name: "Monthly Dispensing Report - June 2025",
-    type: "Dispensing",
-    generatedDate: "2025-07-01",
-    period: "June 1-30, 2025",
-    status: "ready",
-    size: "2.4 MB",
-  },
-  {
-    id: "2",
-    name: "Inventory Status Report - June 2025",
-    type: "Inventory",
-    generatedDate: "2025-07-01",
-    period: "June 1-30, 2025",
-    status: "ready",
-    size: "1.8 MB",
-  },
-  {
-    id: "3",
-    name: "Stock Movement Analysis - Q2 2025",
-    type: "Analysis",
-    generatedDate: "2025-06-30",
-    period: "April 1 - June 30, 2025",
-    status: "ready",
-    size: "3.2 MB",
-  },
-  {
-    id: "4",
-    name: "Prescription Summary Report - May 2025",
-    type: "Prescriptions",
-    generatedDate: "2025-06-01",
-    period: "May 1-31, 2025",
-    status: "ready",
-    size: "2.1 MB",
-  },
-  {
-    id: "5",
-    name: "Expiry Alert Report - Current",
-    type: "Expiry",
-    generatedDate: "2025-07-10",
-    period: "Current stock items",
-    status: "ready",
-    size: "856 KB",
-  },
-];
+import * as service from "@/lib/pharmacy-service";
 
 export default function ReportsPage() {
+  const [report, setReport] = useState<service.PharmacyReport | null>(null);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    service.getReports().then(setReport).catch(() => setError("Unable to load pharmacy report."));
+  }, []);
+
   return (
     <div className="flex h-screen bg-slate-50">
       <PharmacySidebar />
@@ -150,19 +101,23 @@ export default function ReportsPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-border">
-                    {mockReports.map((report) => (
-                      <tr key={report.id} className="hover:bg-slate-50">
+                    {error ? (
+                      <tr><td colSpan={6} className="px-6 py-10 text-center text-sm text-red-600">{error}</td></tr>
+                    ) : !report ? (
+                      <tr><td colSpan={6} className="px-6 py-10 text-center text-sm text-navy/60">Loading pharmacy report...</td></tr>
+                    ) : (
+                      <tr className="hover:bg-slate-50">
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
                             <div className="rounded-lg bg-health-50 p-2">
                               <FileText className="h-4 w-4 text-health-600" />
                             </div>
-                            <span className="font-medium text-navy">{report.name}</span>
+                            <span className="font-medium text-navy">Current Pharmacy Summary</span>
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-sm text-navy/70">{report.type}</td>
-                        <td className="px-6 py-4 text-sm text-navy/70">{report.period}</td>
-                        <td className="px-6 py-4 text-sm text-navy/70">{report.generatedDate}</td>
+                        <td className="px-6 py-4 text-sm text-navy/70">Summary</td>
+                        <td className="px-6 py-4 text-sm text-navy/70">Live database</td>
+                        <td className="px-6 py-4 text-sm text-navy/70">{new Date().toLocaleDateString()}</td>
                         <td className="px-6 py-4">
                           <span className="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
                             ✓ Ready
@@ -175,7 +130,7 @@ export default function ReportsPage() {
                           </button>
                         </td>
                       </tr>
-                    ))}
+                    )}
                   </tbody>
                 </table>
               </div>

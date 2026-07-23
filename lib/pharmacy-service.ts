@@ -12,7 +12,18 @@ const DEFAULT_HOSPITAL = process.env.NEXT_PUBLIC_HOSPITAL_ID || 'NGEMS-HOS-2026-
 
 function getHospitalId() {
   try {
-    return (window as any).__NGEMS_HOSPITAL_ID || DEFAULT_HOSPITAL;
+    const configuredId = (window as any).__NGEMS_HOSPITAL_ID;
+    if (typeof configuredId === 'string' && configuredId.trim()) return configuredId.trim();
+
+    const rawSession = window.localStorage.getItem('ngemsHospitalSession');
+    if (rawSession) {
+      const session = JSON.parse(rawSession) as { hospitalId?: unknown };
+      if (typeof session.hospitalId === 'string' && session.hospitalId.trim()) {
+        return session.hospitalId.trim();
+      }
+    }
+
+    return DEFAULT_HOSPITAL;
   } catch {
     return DEFAULT_HOSPITAL;
   }
@@ -30,6 +41,20 @@ export type PharmacyReport = {
   inventoryItems: number;
   patients: number;
 };
+
+export type PharmacyDashboardSummary = {
+  pendingPrescriptions: number;
+  dispensedToday: number;
+  totalMedicines: number;
+  lowStockAlerts: number;
+  expiredMedicines: number;
+};
+
+export async function getDashboardSummary(): Promise<PharmacyDashboardSummary> {
+  const hospitalId = getHospitalId();
+  const data = await api(`/api/pharmacy/dashboard?hospitalId=${encodeURIComponent(hospitalId)}`);
+  return data.data;
+}
 
 export async function getPrescriptions(){
   const hospitalId = getHospitalId();
@@ -62,7 +87,26 @@ export type Medicine = {
   unit?: string;
   price?: number;
   expiryDate?: string;
+  createdAt?: string;
+  updatedAt?: string;
 };
+
+export type TransactionHistory = {
+  id: string;
+  medicineName: string;
+  type: "dispensed" | "added" | "adjusted" | "deleted";
+  quantity: number;
+  unit?: string;
+  reason: string;
+  operator: string;
+  timestamp: string;
+};
+
+export async function getPharmacyHistory(): Promise<TransactionHistory[]> {
+  const hospitalId = getHospitalId();
+  const data = await api(`/api/pharmacy/history?hospitalId=${encodeURIComponent(hospitalId)}`);
+  return data.data || [];
+}
 
 export async function getInventory(){
   const hospitalId = getHospitalId();
@@ -78,8 +122,14 @@ export async function createInventoryItem(item: Partial<Medicine>){
 }
 
 export async function updateInventoryItem(id: string, item: Partial<Medicine>){
-  const res = await api(`/api/inventory?id=${encodeURIComponent(id)}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(item) });
+  const hospitalId = getHospitalId();
+  const res = await api(`/api/inventory?id=${encodeURIComponent(id)}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ hospitalId, ...item }) });
   return res;
+}
+
+export async function deleteInventoryItem(id: string){
+  const hospitalId = getHospitalId();
+  return api(`/api/inventory?id=${encodeURIComponent(id)}&hospitalId=${encodeURIComponent(hospitalId)}`, { method: 'DELETE' });
 }
 
 export async function getStockAlerts(){
@@ -94,4 +144,4 @@ export async function getReports(){
   return data.report || {};
 }
 
-export default { getPrescriptions, updatePrescription, dispensePrescription, getInventory, createInventoryItem, updateInventoryItem, getStockAlerts, getReports };
+export default { getPrescriptions, getDashboardSummary, updatePrescription, dispensePrescription, getInventory, createInventoryItem, updateInventoryItem, deleteInventoryItem, getStockAlerts, getReports, getPharmacyHistory };

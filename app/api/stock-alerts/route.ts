@@ -14,7 +14,7 @@ export async function GET(request: Request) {
     const snapshot = await db.collection('inventory').where('hospitalId','==',hospitalId).get();
     const alerts = snapshot.docs
       .map(d => ({ id: d.id, ...d.data() }))
-      .filter(i => (i.quantity || 0) <= (i.minQty || 0));
+      .filter(i => (i.quantity || 0) <= (i.minStock ?? i.minQty ?? 0));
     return NextResponse.json({ success:true, data: alerts });
   } catch (err) { console.error(err); return NextResponse.json({ success:false, error:'Failed to load stock alerts' }, { status:500 }); }
 }

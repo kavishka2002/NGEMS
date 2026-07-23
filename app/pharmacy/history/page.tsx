@@ -3,83 +3,27 @@
 import PharmacyNavbar from "@/components/pharmacy/PharmacyNavbar";
 import PharmacySidebar from "@/components/pharmacy/PharmacySidebar";
 import { Clock, Pill, Plus, Minus } from "lucide-react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-
-interface TransactionHistory {
-  id: string;
-  medicineName: string;
-  type: "dispensed" | "added" | "adjusted";
-  quantity: number;
-  unit: string;
-  reason: string;
-  operator: string;
-  timestamp: string;
-}
-
-const mockHistory: TransactionHistory[] = [
-  {
-    id: "1",
-    medicineName: "Aspirin 500mg",
-    type: "dispensed",
-    quantity: 5,
-    unit: "boxes",
-    reason: "Prescription #RX-2025-001",
-    operator: "Dr. Perera",
-    timestamp: "2025-07-10 10:30",
-  },
-  {
-    id: "2",
-    medicineName: "Amoxicillin 500mg",
-    type: "added",
-    quantity: 100,
-    unit: "tablets",
-    reason: "Stock replenishment",
-    operator: "Pharmacist Silva",
-    timestamp: "2025-07-10 09:15",
-  },
-  {
-    id: "3",
-    medicineName: "Ibuprofen 200mg",
-    type: "dispensed",
-    quantity: 10,
-    unit: "tablets",
-    reason: "Prescription #RX-2025-002",
-    operator: "Dr. Perera",
-    timestamp: "2025-07-10 08:45",
-  },
-  {
-    id: "4",
-    medicineName: "Paracetamol 500mg",
-    type: "adjusted",
-    quantity: 2,
-    unit: "boxes",
-    reason: "Inventory correction",
-    operator: "Admin",
-    timestamp: "2025-07-09 16:20",
-  },
-  {
-    id: "5",
-    medicineName: "Cough Syrup 100ml",
-    type: "dispensed",
-    quantity: 3,
-    unit: "bottles",
-    reason: "Prescription #RX-2025-003",
-    operator: "Dr. Perera",
-    timestamp: "2025-07-09 14:30",
-  },
-  {
-    id: "6",
-    medicineName: "Metformin 500mg",
-    type: "added",
-    quantity: 50,
-    unit: "boxes",
-    reason: "Monthly delivery",
-    operator: "Pharmacist Silva",
-    timestamp: "2025-07-09 10:00",
-  },
-];
+import * as service from "@/lib/pharmacy-service";
 
 export default function HistoryPage() {
+  const [history, setHistory] = useState<service.TransactionHistory[]>([]);
+  const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    service.getPharmacyHistory()
+      .then(setHistory)
+      .catch(() => setError("Unable to load pharmacy history."))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const filteredHistory = history.filter((record) =>
+    `${record.medicineName} ${record.reason}`.toLowerCase().includes(search.toLowerCase())
+  );
+
   const getTypeIcon = (type: string) => {
     switch (type) {
       case "dispensed":
@@ -150,6 +94,8 @@ export default function HistoryPage() {
                 <input
                   type="text"
                   placeholder="Search medicine name or reason..."
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
                   className="w-full rounded-lg border border-slate-border bg-white px-4 py-2 text-sm text-navy placeholder-navy/40 focus:border-health-500 focus:outline-none focus:ring-1 focus:ring-health-500"
                 />
               </div>
@@ -185,7 +131,13 @@ export default function HistoryPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-border">
-                    {mockHistory.map((record) => (
+                    {loading ? (
+                      <tr><td colSpan={6} className="px-6 py-10 text-center text-sm text-navy/60">Loading pharmacy history...</td></tr>
+                    ) : error ? (
+                      <tr><td colSpan={6} className="px-6 py-10 text-center text-sm text-red-600">{error}</td></tr>
+                    ) : filteredHistory.length === 0 ? (
+                      <tr><td colSpan={6} className="px-6 py-10 text-center text-sm text-navy/60">No pharmacy transactions found.</td></tr>
+                    ) : filteredHistory.map((record) => (
                       <tr key={record.id} className="hover:bg-slate-50">
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">

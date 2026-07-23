@@ -24,8 +24,10 @@ export async function GET(request: Request) {
     const hospitalId = normalizeString(url.searchParams.get("hospitalId"));
     if (!hospitalId) return NextResponse.json({ success: false, error: "hospitalId required" }, { status: 400 });
     const db = getFirestoreClient();
-    const snapshot = await db.collection("dispensing").where("hospitalId", "==", hospitalId).orderBy("createdAt", "desc").limit(200).get();
-    const data = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+    const snapshot = await db.collection("dispensing").where("hospitalId", "==", hospitalId).limit(200).get();
+    const data = (snapshot.docs
+      .map((d) => ({ id: d.id, ...d.data() })) as Array<Record<string, any>>)
+      .sort((left, right) => String(right.createdAt || "").localeCompare(String(left.createdAt || "")));
     return NextResponse.json({ success: true, data });
   } catch (err) { console.error(err); return NextResponse.json({ success: false, error: "Failed to load dispensing" }, { status: 500 }); }
 }
@@ -35,14 +37,41 @@ export async function POST(request: Request) {
     const body = await parseRequestBody(request);
     const hospitalId = normalizeString(body.hospitalId);
     const prescriptionId = normalizeString(body.prescriptionId);
-    const items = body.items || [];
-    if (!hospitalId || !prescriptionId || !Array.isArray(items) || items.length === 0) {
+    let items = body.items || [];
+    if (!hospitalId || !prescriptionId || !Array.isArray(items)) {
       return NextResponse.json({ success: false, error: "hospitalId, prescriptionId and items required" }, { status: 400 });
     }
     const db = getFirestoreClient();
+    if (items.length === 0) {
+      const prescription = await db.collection("prescriptions").doc(prescriptionId).get();
+      const prescriptionData = prescription.data();
+      if (!prescription.exists || prescriptionData?.hospitalId !== hospitalId) {
+        return NextResponse.json({ success: false, error: "Prescription not found" }, { status: 404 });
+      }
+      items = prescriptionData.items || prescriptionData.medicines || [];
+    }
+    if (items.length === 0) {
+      return NextResponse.json({ success: false, error: "Prescription has no medicines" }, { status: 400 });
+    }
     const now = new Date().toISOString();
     const rec = { hospitalId, prescriptionId, items, createdAt: now, updatedAt: now, performedBy: body.performedBy || null };
     const docRef = await db.collection("dispensing").add(rec);
+    const transactionBatch = db.batch();
+    for (const item of items) {
+      const medicine = typeof item === "object" && item !== null ? item as Record<string, unknown> : {};
+      transactionBatch.create(db.collection("pharmacyTransactions").doc(), {
+        hospitalId,
+        medicineName: normalizeString(medicine.name ?? medicine.medicineName ?? item) || "Unknown medicine",
+        type: "dispensed",
+        quantity: Number(medicine.quantity ?? medicine.qty ?? 1) || 0,
+        unit: normalizeString(medicine.unit),
+        reason: `Prescription #${prescriptionId}`,
+        operator: normalizeString(body.performedBy) || "System",
+        timestamp: now,
+        sourceId: docRef.id,
+      });
+    }
+    await transactionBatch.commit();
 
     // Optionally update prescription status
     try {

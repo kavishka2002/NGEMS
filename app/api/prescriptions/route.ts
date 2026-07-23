@@ -36,7 +36,20 @@ export async function GET(request: Request) {
     if (status) q = q.where("status", "==", status);
 
     const snapshot = await q.get();
-    const items = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+    const patientSnapshot = await db.collection("patients").where("hospitalId", "==", hospitalId).get();
+    const patientNames = new Map(patientSnapshot.docs.map((doc) => [doc.id, String(doc.data().name || "Unknown Patient")]));
+    const items = snapshot.docs.map((d) => {
+      const data = d.data();
+      return {
+        id: d.id,
+        ...data,
+        patientName: data.patientName || patientNames.get(String(data.patientId || "")) || "Unknown Patient",
+        doctorName: data.doctorName || data.doctor || "",
+        medicines: Array.isArray(data.medicines) ? data.medicines : Array.isArray(data.items) ? data.items.map((item: any) => `${item.name || "Medicine"} (${item.qty || item.quantity || 1})`) : [],
+        status: String(data.status || "pending").toLowerCase(),
+        dateIssued: data.dateIssued || data.createdAt || "",
+      };
+    });
     return NextResponse.json({ success: true, data: items });
   } catch (err) {
     console.error("Prescriptions GET failed:", err);
