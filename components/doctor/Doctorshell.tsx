@@ -8,7 +8,7 @@ import { doctor } from '@/lib/data';
 import StatusDot from './StatusDot';
 
 const nav = [
-  ['Dashboard', '/doctor/dashboard', LayoutDashboard],
+  ['Dashboard', '/doctor', LayoutDashboard],
   ['My Patients', '/doctor/patients', Users],
   ['Appointments', '/doctor/appointments', CalendarDays],
   ["Today's Queue", '/doctor/queue', ClipboardList],
@@ -32,6 +32,30 @@ export default function DoctorShell({ children }: { children: React.ReactNode })
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [notificationsCount, setNotificationsCount] = useState(0);
   const [notificationsRead, setNotificationsRead] = useState(false);
+  const [profile, setProfile] = useState({
+    name: doctor.name,
+    specialization: doctor.specialization,
+    status: doctor.status,
+  });
+
+  useEffect(() => {
+    const rawSession = window.localStorage.getItem('ngemsHospitalSession');
+    if (!rawSession) return;
+
+    try {
+      const session = JSON.parse(rawSession) as Record<string, unknown>;
+      const username = typeof session.username === 'string' ? session.username : '';
+      const fullName = typeof session.fullName === 'string' ? session.fullName : '';
+      const specialization = typeof session.specialization === 'string' ? session.specialization : '';
+      setProfile((current) => ({
+        name: fullName || username || current.name,
+        specialization: specialization || current.specialization,
+        status: current.status,
+      }));
+    } catch {
+      // Keep the default profile when the saved session is invalid.
+    }
+  }, []);
 
   useEffect(() => {
     if (!search.trim()) {
@@ -74,7 +98,7 @@ export default function DoctorShell({ children }: { children: React.ReactNode })
   const Side = () => (
     <aside className={`h-full bg-slate-950 text-slate-100 transition-all ${collapsed ? 'w-20' : 'w-72'}`}>
       <div className="flex h-20 items-center justify-between border-b border-slate-800 px-5">
-        <Link href="/doctor/dashboard" className="flex items-center gap-3">
+        <Link href="/doctor" className="flex items-center gap-3">
           <div className="grid h-10 w-10 place-items-center rounded-2xl bg-white text-slate-950 shadow-sm">
             <Stethoscope size={22} />
           </div>
@@ -155,7 +179,7 @@ export default function DoctorShell({ children }: { children: React.ReactNode })
                       <div className="font-semibold">{item.name ?? item.patient}</div>
                       <div className="text-[11px] text-slate-500">{item.patientId ?? item.id} • {item.reason ?? item.nic ?? item.type}</div>
                     </div>
-                    <StatusDot value={item.status ?? item.type ?? 'Info'} />
+                    <StatusDot status={item.status ?? item.type ?? 'Info'} />
                   </Link>
                 ))}
               </div>
@@ -176,10 +200,10 @@ export default function DoctorShell({ children }: { children: React.ReactNode })
             )}
           </Link>
           <div className="hidden items-center gap-3 md:flex">
-            <div className="grid h-10 w-10 place-items-center rounded-full bg-brand-100 font-bold text-brand-700">KP</div>
+            <div className="grid h-10 w-10 place-items-center rounded-full bg-brand-100 font-bold text-brand-700">{profile.name.split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase()}</div>
             <div>
-              <div className="text-sm font-semibold text-slate-900">{doctor.name}</div>
-              <div className="text-xs text-slate-500">{doctor.specialization} · <span className="text-emerald-600">{doctor.status}</span></div>
+              <div className="text-sm font-semibold text-slate-900">{profile.name}</div>
+              <div className="text-xs text-slate-500">{profile.specialization} · <span className="text-emerald-600">{profile.status}</span></div>
             </div>
           </div>
         </header>

@@ -15,44 +15,6 @@ type FormState = {
   password: string;
 };
 
-type DemoAccountResult = {
-  valid: boolean;
-  role?: string;
-};
-
-function validateDemoAccount(
-  hospitalId: string,
-  username: string,
-  password: string
-): DemoAccountResult {
-  const normalizedHospitalId = hospitalId.trim().toUpperCase();
-  const normalizedUsername = username.trim().toLowerCase();
-  const normalizedPassword = password.trim();
-
-  if (!normalizedHospitalId.startsWith("NGEMS-HOS")) {
-    return { valid: false };
-  }
-
-  const demoAccounts: Record<string, { password: string; role: string }> = {
-    admin: { password: "admin123", role: "Admin" },
-    doctor: { password: "doctor123", role: "Doctor" },
-    reception: { password: "reception123", role: "Reception Staff" },
-    pharmacy: { password: "pharmacy123", role: "Pharmacy Staff" },
-    laboratory: { password: "laboratory123", role: "Laboratory Staff" },
-  };
-
-  const account = demoAccounts[normalizedUsername];
-
-  if (!account || account.password !== normalizedPassword) {
-    return { valid: false };
-  }
-
-  return {
-    valid: true,
-    role: account.role,
-  };
-}
-
 export default function StaffLoginPage() {
   const router = useRouter();
 
@@ -112,13 +74,13 @@ export default function StaffLoginPage() {
     const role = String(roleValue ?? "").toLowerCase();
 
     if (role.includes("doctor")) {
-      router.push("/doctor/dashboard");
+      router.push("/doctor");
     } else if (role.includes("reception")) {
       router.push("/dashboard/reception");
     } else if (role.includes("pharmacy")) {
-      router.push("/pharmacy");
+      router.push("/pharmacy/dashboard");
     } else if (role.includes("laboratory")) {
-      router.push("/laboratory");
+      router.push("/laboratory/dashboard");
     } else {
       router.push("/dashboard");
     }
@@ -137,26 +99,6 @@ export default function StaffLoginPage() {
     try {
       const normalizedHospitalId = form.hospitalId.trim();
       const normalizedUsername = form.username.trim();
-
-      const demoCheck = validateDemoAccount(
-        normalizedHospitalId,
-        normalizedUsername,
-        form.password
-      );
-
-      if (demoCheck.valid) {
-        const role = demoCheck.role ?? "Staff";
-
-        saveSession({
-          hospitalId: normalizedHospitalId,
-          hospitalName: "NGEMS Hospital",
-          username: normalizedUsername,
-          role,
-        });
-
-        redirectByRole(role);
-        return;
-      }
 
       const response = await fetch("/api/login", {
         method: "POST",
@@ -186,7 +128,6 @@ export default function StaffLoginPage() {
         );
       }
 
-<<<<<<< HEAD
       saveSession({
         hospitalId: data.hospitalId ?? normalizedHospitalId,
         hospitalName: data.hospitalName ?? "NGEMS Hospital",
@@ -201,10 +142,6 @@ export default function StaffLoginPage() {
       });
 
       redirectByRole(data.role);
-=======
-      const redirectPath = data.redirectPath || "/dashboard";
-      router.push(redirectPath);
->>>>>>> 520c4eed498894a0e26e5ad004fd07202195b9cb
     } catch (error) {
       setFormError(
         error instanceof Error ? error.message : "Unable to sign in."

@@ -88,7 +88,8 @@ function getRedirectPath(role: string) {
   if (normalized.includes("reception")) return "/dashboard/reception";
   if (normalized.includes("pharmacy")) return "/pharmacy/dashboard";
   if (normalized.includes("laboratory")) return "/laboratory/dashboard";
-  if (normalized.includes("doctor") || normalized.includes("nurse")) return "/dashboard";
+  if (normalized.includes("doctor")) return "/doctor";
+  if (normalized.includes("nurse")) return "/dashboard";
   if (normalized.includes("administrator") || normalized.includes("admin") || normalized.includes("hospital user")) return "/dashboard";
   return "/dashboard";
 }
@@ -111,16 +112,18 @@ export async function POST(request: Request) {
     try {
       const firestore = getFirestoreClient();
 
-      // search doctors collection for matching username/password
+      // Check legacy doctor records by username, then verify the password in code.
       const doctorQuery = await firestore
         .collection("doctors")
         .where("username", "==", username)
-        .where("password", "==", password)
         .limit(1)
         .get();
 
       if (doctorQuery && !doctorQuery.empty) {
         const doctorRecord = doctorQuery.docs[0].data();
+        if (normalizeString(doctorRecord.password) !== password) {
+          return NextResponse.json({ error: "Invalid credentials." }, { status: 401 });
+        }
         const doctorHospitalId = normalizeString(doctorRecord.hospitalId) || hospitalId;
 
         return NextResponse.json({
@@ -180,12 +183,14 @@ export async function POST(request: Request) {
         const staffSnapshot = await firestore
           .collection("staff")
           .where("hospitalId", "==", hospitalId)
-          .where("username", "==", username)
-          .limit(1)
+          .limit(200)
           .get();
 
-        if (staffSnapshot && !staffSnapshot.empty) {
-          const staffData = staffSnapshot.docs[0].data();
+        const staffDoc = staffSnapshot.docs.find(
+          (doc) => normalizeCredential(doc.data().username) === normalizeCredential(username)
+        );
+        if (staffDoc) {
+          const staffData = staffDoc.data();
           userRecord = staffData;
           foundInStaff = true;
         }
