@@ -22,7 +22,7 @@ import PatientTimeline from "@/components/reception/PatientTimeline";
 import HospitalVisitHistory from "@/components/reception/HospitalVisitHistory";
 import MedicinesCard from "@/components/reception/MedicinesCard";
 import LabReportsCard from "@/components/reception/LabReportsCard";
-import { DEMO_KEYS, DEMO_RECORD, PatientRecord } from "@/lib/reception-data";
+import { PatientRecord } from "@/lib/reception-data";
 
 const REGISTRATIONS_TODAY = [
   { label: "8am", value: 4 },
@@ -61,16 +61,39 @@ export default function ReceptionDashboardPage() {
     setSearched(didSearch);
   };
 
-  const handleCheckExisting = (query: string) => {
+  const handleCheckExisting = async (query: string) => {
     if (!query.trim()) {
       setRecord(null);
       setSearched(false);
       return;
     }
-    const match = DEMO_KEYS.includes(query.trim()) ? DEMO_RECORD : null;
-    setRecord(match);
+
+    const rawSession = typeof window !== "undefined" ? window.localStorage.getItem("ngemsHospitalSession") : null;
+    const hospitalId = rawSession ? (JSON.parse(rawSession) as { hospitalId?: string })?.hospitalId : "";
+
     setSearched(true);
-    document.getElementById("search")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (!hospitalId) {
+      setRecord(null);
+      document.getElementById("search")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+
+    try {
+      const params = new URLSearchParams({ hospitalId, query: query.trim() });
+      const response = await fetch(`/api/patients?${params.toString()}`);
+      if (!response.ok) {
+        setRecord(null);
+        return;
+      }
+
+      const payload = await response.json();
+      setRecord(payload.patient ?? null);
+    } catch (error) {
+      console.error("Patient search failed", error);
+      setRecord(null);
+    } finally {
+      document.getElementById("search")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
   };
 
   const scrollToDetail = () => {
@@ -128,7 +151,7 @@ export default function ReceptionDashboardPage() {
             </div>
 
             <div className="space-y-6 lg:sticky lg:top-24 lg:self-start">
-              {record ? (
+              {record && record.patient ? (
                 <PatientFoundCard patient={record.patient} onViewHistory={scrollToDetail} />
               ) : (
                 <PatientSearchCard onResult={handleResult} />
@@ -142,9 +165,9 @@ export default function ReceptionDashboardPage() {
           </div>
 
           {/* Full medical record — appears once a patient is found */}
-          {record && (
+          {record && record.patient && (
             <div ref={detailRef} className="scroll-mt-24 space-y-6">
-              <p className="divider-label">Complete Medical Record &middot; {record.patient.name}</p>
+              <p className="divider-label">Complete Medical Record &middot; {record.patient.name ?? (record.patient as any).fullName ?? "—"}</p>
               <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
                 <div className="space-y-6 lg:col-span-2">
                   <PatientTimeline visits={record.visits} />

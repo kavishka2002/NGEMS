@@ -1,7 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { getFirestoreClient } from "@/lib/firebaseAdmin";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 async function parseRequestBody(
   request: Request
@@ -22,7 +23,7 @@ async function parseRequestBody(
   try {
     console.debug("[api/hospitals] content-type:", contentType);
     console.debug("[api/hospitals] body length:", text.length);
-  } catch {}
+  } catch { }
 
   if (!text) {
     return {};
@@ -39,7 +40,7 @@ async function parseRequestBody(
     ) {
       return parsed as Record<string, unknown>;
     }
-  } catch {}
+  } catch { }
 
   // Try JS object literal
   try {
@@ -62,7 +63,7 @@ async function parseRequestBody(
     ) {
       return parsed as Record<string, unknown>;
     }
-  } catch {}
+  } catch { }
 
   // Try URL encoded
   try {
@@ -75,15 +76,15 @@ async function parseRequestBody(
 }
 
 // GET - Search hospitals
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
-    const url = new URL(request.url);
+    const { searchParams } = request.nextUrl;
 
     const hospitalId =
-      (url.searchParams.get("hospitalId") ?? "").trim();
+      (searchParams.get("hospitalId") ?? "").trim();
 
     const hospitalName =
-      (url.searchParams.get("hospitalName") ?? "").trim();
+      (searchParams.get("hospitalName") ?? "").trim();
 
     if (!hospitalId && !hospitalName) {
       return NextResponse.json(

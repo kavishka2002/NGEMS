@@ -1,12 +1,29 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import PharmacyNavbar from "@/components/pharmacy/PharmacyNavbar";
 import PharmacySidebar from "@/components/pharmacy/PharmacySidebar";
 import Button from "@/components/Button";
 import { Plus, Search, Filter } from "lucide-react";
 import Link from "next/link";
+import * as service from "@/lib/pharmacy-service";
 
 export default function PrescriptionsPage() {
+  const [prescriptions, setPrescriptions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    service.getPrescriptions().then((data) => {
+      if (mounted) setPrescriptions(data);
+    }).catch((err) => {
+      console.error('Failed to load prescriptions', err);
+    }).finally(() => {
+      if (mounted) setLoading(false);
+    });
+    return () => { mounted = false; };
+  }, []);
+
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-slate-50">
       <PharmacyNavbar />
@@ -55,8 +72,40 @@ export default function PrescriptionsPage() {
 
           {/* Prescriptions Content */}
           <div className="rounded-lg bg-white shadow-sm border border-slate-border p-6">
-            <div className="text-center py-12">
-              <p className="text-navy/60 mb-4">Prescriptions list will be displayed here</p>
+            {loading ? (
+              <div className="text-center py-12 text-slate-500">Loading prescriptions...</div>
+            ) : prescriptions.length === 0 ? (
+              <div className="text-center py-12 text-slate-500">No prescriptions found.</div>
+            ) : (
+              <div className="space-y-4">
+                {prescriptions.map((prescription) => (
+                  <div key={prescription.id} className="rounded-xl border border-slate-border p-4">
+                    <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                      <div>
+                        <p className="text-sm text-slate-500">Patient</p>
+                        <p className="font-semibold text-navy">{prescription.patientName || 'Unknown'}</p>
+                        <p className="text-xs text-slate-400">ID: {prescription.patientId || '-'}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm text-slate-500">Status</p>
+                        <p className="font-semibold text-navy">{prescription.status || 'Pending'}</p>
+                      </div>
+                    </div>
+                    <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                      <div>
+                        <p className="text-xs text-slate-500">Doctor</p>
+                        <p className="text-sm font-medium text-slate-700">{prescription.doctorName || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-500">Medicines</p>
+                        <p className="text-sm font-medium text-slate-700">{(prescription.medicines || []).join(', ')}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="mt-6 text-center">
               <Link href="/pharmacy/dashboard">
                 <Button type="button" variant="secondary" className="px-4 py-2 text-sm">
                   Back to Dashboard

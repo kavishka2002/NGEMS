@@ -1,11 +1,12 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { UserPlus, HeartPulse, Building2, RotateCcw, ScanSearch, CheckCircle2 } from "lucide-react";
 import Input from "@/components/Input";
 import Select from "@/components/Select";
 import Button from "@/components/Button";
-import { PROVINCES, DISTRICTS, BLOOD_GROUPS, DEPARTMENTS, DOCTORS, calcAge } from "@/lib/reception-data";
+import { PROVINCES, DISTRICTS, BLOOD_GROUPS, DEPARTMENTS, calcAge } from "@/lib/reception-data";
+import { getStaffList } from "@/lib/staff-service";
 
 const GENDERS = ["Male", "Female", "Other"];
 const APPOINTMENT_TYPES = ["OPD Visit", "Clinic Visit", "Emergency Visit"];
@@ -74,11 +75,42 @@ export default function PatientRegistrationForm({ onCheckExisting }: PatientRegi
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
   const [submitting, setSubmitting] = useState(false);
   const [successId, setSuccessId] = useState<string | null>(null);
+  const [serverError, setServerError] = useState<string | null>(null);
+  const [doctors, setDoctors] = useState<string[]>([]);
+  const [doctorLoading, setDoctorLoading] = useState(true);
+  const [doctorLoadError, setDoctorLoadError] = useState<string | null>(null);
 
   const update = (key: keyof FormState) => (e: any) =>
     setForm((f) => ({ ...f, [key]: e.target.value }));
 
   const age = form.dob ? calcAge(form.dob) : null;
+
+  useEffect(() => {
+    const loadDoctorOptions = async () => {
+      const rawSession = typeof window !== "undefined" ? window.localStorage.getItem("ngemsHospitalSession") : null;
+      const hospitalId = rawSession
+        ? (JSON.parse(rawSession) as { hospitalId?: string })?.hospitalId
+        : (process.env.NEXT_PUBLIC_HOSPITAL_ID as string) || null;
+
+      if (!hospitalId) {
+        setDoctorLoadError("Unable to load doctors without a valid hospital session.");
+        setDoctorLoading(false);
+        return;
+      }
+
+      try {
+        const doctorsData = await getStaffList(hospitalId, "Doctor");
+        setDoctors(doctorsData.map((doctor) => doctor.fullName).filter(Boolean));
+      } catch (error) {
+        console.error("Failed to load doctor list", error);
+        setDoctorLoadError("Failed to load doctor list.");
+      } finally {
+        setDoctorLoading(false);
+      }
+    };
+
+    void loadDoctorOptions();
+  }, []);
 
   const validate = (): boolean => {
     const next: Partial<Record<keyof FormState, string>> = {};
@@ -105,16 +137,53 @@ export default function PatientRegistrationForm({ onCheckExisting }: PatientRegi
     return Object.keys(next).length === 0;
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setSuccessId(null);
+    setServerError(null);
+
     if (!validate()) return;
 
+    const rawSession = typeof window !== "undefined" ? window.localStorage.getItem("ngemsHospitalSession") : null;
+    const session = rawSession ? (JSON.parse(rawSession) as { hospitalId?: string; hospitalName?: string }) : {
+      hospitalId: (process.env.NEXT_PUBLIC_HOSPITAL_ID as string) || undefined,
+      hospitalName: (process.env.NEXT_PUBLIC_HOSPITAL_NAME as string) || undefined,
+    };
+
+    if (!session?.hospitalId || !session?.hospitalName) {
+      setServerError("Hospital session is missing or incomplete. Please log in or set NEXT_PUBLIC_HOSPITAL_ID/NEXT_PUBLIC_HOSPITAL_NAME.");
+      return;
+    }
+
     setSubmitting(true);
-    setTimeout(() => {
+
+    try {
+      const response = await fetch("/api/patients", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          hospitalId: session.hospitalId,
+          hospitalName: session.hospitalName,
+          ...form,
+        }),
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        setServerError(result.error || "Patient registration failed.");
+        return;
+      }
+
+      setSuccessId(result.patient?.patientId || result.patientId || "Registered");
+      setForm(initialState);
+    } catch (error) {
+      console.error("Registration failed", error);
+      setServerError("Failed to register patient. Please try again.");
+    } finally {
       setSubmitting(false);
-      setSuccessId(nextPatientId());
-    }, 900);
+    }
   };
 
   const handleClear = () => {
@@ -140,6 +209,12 @@ export default function PatientRegistrationForm({ onCheckExisting }: PatientRegi
           </div>
         </div>
       </div>
+
+      {serverError && (
+        <div className="mb-6 rounded-lg border border-rose-100 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          {serverError}
+        </div>
+      )}
 
       {successId && (
         <div className="mb-6 flex items-start gap-2.5 rounded-lg border border-health-100 bg-health-50 px-4 py-3 animate-fade-in">
@@ -330,9 +405,11 @@ export default function PatientRegistrationForm({ onCheckExisting }: PatientRegi
             <Select
               label="Doctor"
               name="doctor"
-              options={DOCTORS}
+              options={doctors.length > 0 ? doctors : ["No doctors available"]}
               value={form.doctor}
               onChange={update("doctor")}
+              disabled={doctorLoading || doctors.length === 0}
+              error={doctorLoadError ?? undefined}
             />
             <Select
               label="Appointment Type"

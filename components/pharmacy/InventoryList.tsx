@@ -1,60 +1,32 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Package, Plus, Edit2, Trash2, AlertTriangle } from "lucide-react";
 import Button from "@/components/Button";
+import * as service from "@/lib/pharmacy-service";
 
 interface Medicine {
   id: string;
   name: string;
   quantity: number;
-  minStock: number;
-  unit: string;
-  price: number;
-  expiryDate: string;
+  minStock?: number;
+  unit?: string;
+  price?: number;
+  expiryDate?: string;
 }
 
-const mockInventory: Medicine[] = [
-  {
-    id: "M001",
-    name: "Aspirin 500mg",
-    quantity: 150,
-    minStock: 50,
-    unit: "tablets",
-    price: 5.5,
-    expiryDate: "2027-06-15",
-  },
-  {
-    id: "M002",
-    name: "Amoxicillin 250mg",
-    quantity: 45,
-    minStock: 50,
-    unit: "capsules",
-    price: 12.0,
-    expiryDate: "2027-08-20",
-  },
-  {
-    id: "M003",
-    name: "Ibuprofen 200mg",
-    quantity: 200,
-    minStock: 100,
-    unit: "tablets",
-    price: 8.0,
-    expiryDate: "2026-12-30",
-  },
-  {
-    id: "M004",
-    name: "Cough Syrup",
-    quantity: 20,
-    minStock: 30,
-    unit: "bottles",
-    price: 15.0,
-    expiryDate: "2026-10-15",
-  },
-];
-
 export default function InventoryList() {
-  const lowStockMedicines = mockInventory.filter((m) => m.quantity <= m.minStock);
+  const [inventory, setInventory] = useState<service.Medicine[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    setLoading(true);
+    service.getInventory().then((data) => { if(mounted) setInventory(data); }).catch(err=>{ console.error(err); }).finally(()=>{ if(mounted) setLoading(false); });
+    return () => { mounted = false; };
+  }, []);
+
+  const lowStockMedicines = inventory.filter((m) => m.quantity <= (m.minStock||0));
 
   return (
     <div className="space-y-4">
@@ -92,15 +64,15 @@ export default function InventoryList() {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-border">
-            {mockInventory.map((medicine) => (
+            {inventory.map((medicine) => (
               <tr key={medicine.id} className="hover:bg-slate-50 transition">
                 <td className="px-4 py-3 font-medium text-navy">{medicine.name}</td>
-                <td className="px-4 py-3 text-right text-navy/70">{medicine.quantity} {medicine.unit}</td>
-                <td className="px-4 py-3 text-right text-navy/70">{medicine.minStock} {medicine.unit}</td>
-                <td className="px-4 py-3 text-right text-navy/70">${medicine.price.toFixed(2)}</td>
-                <td className="px-4 py-3 text-right text-navy/70">{medicine.expiryDate}</td>
+                <td className="px-4 py-3 text-right text-navy/70">{medicine.quantity} {medicine.unit || ''}</td>
+                <td className="px-4 py-3 text-right text-navy/70">{medicine.minStock ?? 0} {medicine.unit || ''}</td>
+                <td className="px-4 py-3 text-right text-navy/70">${medicine.price?.toFixed(2) ?? '0.00'}</td>
+                <td className="px-4 py-3 text-right text-navy/70">{medicine.expiryDate || '-'}</td>
                 <td className="px-4 py-3 text-center">
-                  {medicine.quantity <= medicine.minStock ? (
+                  {(medicine.quantity <= (medicine.minStock ?? 0)) ? (
                     <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-red-50 text-red-700">
                       Low Stock
                     </span>

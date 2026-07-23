@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import DashboardNavbar from "@/components/dashboard/DashboardNavbar";
 import Sidebar from "@/components/dashboard/Sidebar";
@@ -29,7 +29,13 @@ export default function RoleStaffPage() {
     const roleSlug = params.role as string;
     const displayName = ROLE_DISPLAY_NAMES[roleSlug] || "Staff";
     const roleFilter = ROLE_MAPPING[roleSlug] || "";
-    const [hospitalId] = useState("HOS-0001");
+    const [hospitalId, setHospitalId] = useState<string | null>(null);
+
+    useEffect(() => {
+        const rawSession = typeof window !== "undefined" ? window.localStorage.getItem("ngemsHospitalSession") : null;
+        const session = rawSession ? (JSON.parse(rawSession) as { hospitalId?: string }) : null;
+        setHospitalId(session?.hospitalId ?? null);
+    }, []);
 
     return (
         <div className="flex h-screen flex-col overflow-hidden bg-slate-50">
@@ -57,7 +63,13 @@ export default function RoleStaffPage() {
                             </p>
                         </div>
 
-                        <StaffListComponent hospitalId={hospitalId} roleFilter={roleFilter} />
+                        {hospitalId ? (
+                            <StaffListComponent hospitalId={hospitalId} roleFilter={roleFilter} />
+                        ) : (
+                            <div className="rounded-lg border border-rose-200 bg-rose-50 p-6 text-sm text-rose-700">
+                                Hospital session not found. Please sign in again.
+                            </div>
+                        )}
                     </div>
                 </main>
             </div>

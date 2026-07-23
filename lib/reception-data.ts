@@ -59,96 +59,9 @@ export type PatientRecord = {
   hospitalHistory: HospitalVisit[];
 };
 
-// Single fully-populated demo record — search "982345671V" or "PAT-02114".
-export const DEMO_RECORD: PatientRecord = {
-  patient: {
-    id: "PAT-02114",
-    nic: "982345671V",
-    mobile: "+94 77 234 5678",
-    name: "W.A. Nimal Perera",
-    dob: "1968-04-12",
-    gender: "Male",
-    bloodGroup: "O+",
-    regDate: "14 Mar 2022",
-    status: "Active",
-    alerts: ["Penicillin Allergy"],
-  },
-  visits: [
-    {
-      date: "01 Jul 2026",
-      hospital: "National Hospital Colombo",
-      doctor: "Dr. Silva",
-      diagnosis: "Hypertension",
-      note: "Prescription",
-      status: "Completed",
-    },
-    {
-      date: "10 May 2026",
-      hospital: "Teaching Hospital Kandy",
-      doctor: "Dr. Perera",
-      diagnosis: "Diabetes",
-      note: "Lab Report Available",
-      status: "Completed",
-    },
-  ],
-  medicines: [
-    {
-      name: "Amlodipine 5mg",
-      dosage: "1 tablet, once daily",
-      duration: "30 days",
-      hospital: "National Hospital Colombo",
-      doctor: "Dr. Silva",
-      status: "Active",
-    },
-    {
-      name: "Metformin 500mg",
-      dosage: "1 tablet, twice daily",
-      duration: "60 days",
-      hospital: "Teaching Hospital Kandy",
-      doctor: "Dr. Perera",
-      status: "Completed",
-    },
-  ],
-  labReports: [
-    {
-      name: "Lipid Profile",
-      hospital: "National Hospital Colombo",
-      doctor: "Dr. Silva",
-      date: "01 Jul 2026",
-      status: "Completed",
-    },
-    {
-      name: "Fasting Blood Sugar",
-      hospital: "Teaching Hospital Kandy",
-      doctor: "Dr. Perera",
-      date: "10 May 2026",
-      status: "Completed",
-    },
-  ],
-  hospitalHistory: [
-    {
-      hospital: "National Hospital Colombo",
-      date: "01 Jul 2026",
-      department: "OPD · Cardiology",
-      doctor: "Dr. Silva",
-      diagnosis: "Hypertension",
-      admissionDays: 0,
-      dischargeDate: "Same day (OPD)",
-    },
-    {
-      hospital: "Teaching Hospital Kandy",
-      date: "10 May 2026",
-      department: "Medical Ward",
-      doctor: "Dr. Perera",
-      diagnosis: "Type 2 Diabetes Mellitus",
-      admissionDays: 3,
-      dischargeDate: "13 May 2026",
-    },
-  ],
-};
-
-// Lookup keys that resolve to the demo record.
-export const DEMO_KEYS = ["982345671V", "PAT-02114", "+94 77 234 5678", "0772345678"];
+// NOTE: Demo-specific sample record removed. Reception UI should use
+// Firestore-backed APIs via `/api/patients` and `/api/staff` instead of
+// relying on in-repo demo constants.
 
 export function calcAge(dob: string): number {
   const d = new Date(dob);
