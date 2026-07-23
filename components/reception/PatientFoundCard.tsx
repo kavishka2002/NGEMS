@@ -12,6 +12,8 @@ import Button from "@/components/Button";
 import { Patient, calcAge } from "@/lib/reception-data";
 import { useState } from "react";
 import AppointmentModal from "@/components/reception/AppointmentModal";
+import SendToDoctorModal from "@/components/reception/SendToDoctorModal";
+import NewConsultationModal from "@/components/reception/NewConsultationModal";
 
 type PatientFoundCardProps = {
   patient: Patient;
@@ -20,6 +22,8 @@ type PatientFoundCardProps = {
 
 export default function PatientFoundCard({ patient, onViewHistory }: PatientFoundCardProps) {
   const [showBooking, setShowBooking] = useState(false);
+  const [showSendToDoctor, setShowSendToDoctor] = useState(false);
+  const [showNewConsultation, setShowNewConsultation] = useState(false);
   const displayName = (patient && (patient.name || (patient as any).fullName || patient.mobile)) || "Unknown";
   const initials = displayName
     .toString()
@@ -97,11 +101,11 @@ export default function PatientFoundCard({ patient, onViewHistory }: PatientFoun
           <CalendarPlus size={14} />
           Book Appointment
         </Button>
-        <Button variant="ghost" fullWidth type="button" className="border border-slate-200">
+        <Button variant="ghost" fullWidth type="button" className="border border-slate-200" onClick={() => setShowSendToDoctor(true)}>
           <Send size={14} />
           Send To Doctor
         </Button>
-        <Button variant="primary" fullWidth type="button">
+        <Button variant="primary" fullWidth type="button" onClick={() => setShowNewConsultation(true)}>
           <Stethoscope size={14} />
           New Consultation
         </Button>
@@ -111,8 +115,25 @@ export default function PatientFoundCard({ patient, onViewHistory }: PatientFoun
           patient={patient}
           onClose={() => setShowBooking(false)}
           onSaved={(appt) => {
-            // Optionally notify user or refresh lists
             console.log("Appointment created", appt);
+          }}
+        />
+      )}
+      {showSendToDoctor && (
+        <SendToDoctorModal
+          patient={patient}
+          onClose={() => setShowSendToDoctor(false)}
+          onSent={(referral) => {
+            console.log("Referral sent", referral);
+          }}
+        />
+      )}
+      {showNewConsultation && (
+        <NewConsultationModal
+          patient={patient}
+          onClose={() => setShowNewConsultation(false)}
+          onCreated={(consultation) => {
+            console.log("Consultation created", consultation);
           }}
         />
       )}

@@ -87,7 +87,7 @@ export default function ReceptionDashboardPage() {
       }
 
       const payload = await response.json();
-      setRecord(payload.patient ?? null);
+      setRecord(payload ?? null);
     } catch (error) {
       console.error("Patient search failed", error);
       setRecord(null);

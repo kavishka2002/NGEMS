@@ -47,6 +47,8 @@ export async function GET(request: Request) {
     const searchBy = normalizeString(url.searchParams.get("searchBy")).toLowerCase();
     const search = normalizeString(url.searchParams.get("search")).toLowerCase();
 
+    console.log("📌 [GET /api/patients] Received:", { hospitalId, query, searchBy });
+
     if (!hospitalId) {
       return NextResponse.json(
         {
@@ -63,14 +65,16 @@ export async function GET(request: Request) {
     if (!query) {
       const snapshot = await patientsRef
         .where("hospitalId", "==", hospitalId)
-        .orderBy("createdAt", "desc")
         .limit(200)
         .get();
 
-      const patients = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
+      const patients = snapshot.docs
+        .map((doc) => ({ id: doc.id, ...doc.data() }))
+        .sort((a, b) => {
+          const aCreatedAt = normalizeString(a.createdAt ?? "");
+          const bCreatedAt = normalizeString(b.createdAt ?? "");
+          return bCreatedAt.localeCompare(aCreatedAt);
+        });
 
       const filteredPatients = search
         ? patients.filter((item) => JSON.stringify(item).toLowerCase().includes(search))
@@ -85,7 +89,7 @@ export async function GET(request: Request) {
     const normalizedQuery = query.trim();
     const normalizedPhone = normalizePhone(normalizedQuery);
 
-    let snapshot = null;
+    let foundDoc: any = null;
     const searchFields = [] as Array<{ field: string; value: string }>;
 
     if (searchBy === "patient id") {
@@ -105,78 +109,112 @@ export async function GET(request: Request) {
       }
     }
 
+    console.log("🔎 Searching fields:", searchFields);
+
     for (const searchItem of searchFields) {
       if (!searchItem.value) {
         continue;
       }
 
-      snapshot = await patientsRef
-        .where("hospitalId", "==", hospitalId)
-        .where(searchItem.field, "==", searchItem.value)
-        .limit(1)
-        .get();
+      try {
+        const snapshotCandidate = await patientsRef
+          .where(searchItem.field, "==", searchItem.value)
+          .limit(10)
+          .get();
 
-      if (snapshot && !snapshot.empty) {
-        break;
+        const matchingDoc = snapshotCandidate.docs.find((doc) => normalizeString(doc.data().hospitalId) === hospitalId);
+        if (matchingDoc) {
+          foundDoc = matchingDoc;
+          console.log("✅ Found patient via", searchItem.field);
+          break;
+        }
+      } catch (fieldError) {
+        console.warn("⚠️ Error searching field", searchItem.field, fieldError);
+        continue;
       }
     }
 
-    // If a field-specific search didn't return anything, perform a broader client-side
-    // search across multiple fields as a fallback. This helps when mobile numbers are
-    // stored normalized (mobileSearch) but the user-provided query may include
-    // formatting or unexpected characters.
-    if (!snapshot || snapshot.empty) {
-      const snapshotAll = await patientsRef
-        .where("hospitalId", "==", hospitalId)
-        .orderBy("createdAt", "desc")
-        .limit(500)
-        .get();
+    if (!foundDoc) {
+      console.log("📭 No direct match found, doing fallback search...");
 
-      const all = snapshotAll.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      try {
+        const snapshotAll = await patientsRef
+          .where("hospitalId", "==", hospitalId)
+          .limit(500)
+          .get();
 
-      const searchLower = normalizedQuery.toLowerCase();
-      const phoneSearch = normalizePhone(normalizedQuery);
+        const all = snapshotAll.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+        console.log(`Found ${all.length} total patients for hospital`);
 
-      const found = all.find((item) => {
-        try {
-          const s = JSON.stringify(item).toLowerCase();
-          if (s.includes(searchLower)) return true;
-          if (phoneSearch && JSON.stringify(item).includes(phoneSearch)) return true;
-        } catch {
-          // ignore
+        const searchLower = normalizedQuery.toLowerCase();
+        const phoneSearch = normalizePhone(normalizedQuery);
+
+        const found = all.find((item) => {
+          try {
+            const s = JSON.stringify(item).toLowerCase();
+            if (s.includes(searchLower)) return true;
+            if (phoneSearch && JSON.stringify(item).includes(phoneSearch)) return true;
+          } catch {
+            // ignore
+          }
+          return false;
+        });
+
+        if (!found) {
+          console.log("❌ Patient not found with any method");
+          return NextResponse.json(
+            {
+              success: false,
+              error: "Patient not found.",
+            },
+            { status: 404 }
+          );
         }
-        return false;
-      });
 
-      if (!found) {
+        const patientRecord = {
+          patient: found,
+          visits: found.visits || [],
+          medicines: found.medicines || [],
+          labReports: found.labReports || [],
+          hospitalHistory: found.hospitalHistory || [],
+        };
+
+        return NextResponse.json({ success: true, ...patientRecord });
+      } catch (fallbackError) {
+        console.error("❌ Fallback search error:", fallbackError);
         return NextResponse.json(
           {
             success: false,
-            error: "Patient not found.",
+            error: "Fallback search failed: " + String(fallbackError),
           },
-          { status: 404 }
+          { status: 500 }
         );
       }
-
-      return NextResponse.json({ success: true, patient: found });
     }
 
-    const doc = snapshot.docs[0];
-    const patientData = doc.data();
-
-    return NextResponse.json({
-      success: true,
+    const patientData = foundDoc.data();
+    const patientRecord = {
       patient: {
-        id: doc.id,
+        id: foundDoc.id,
         ...patientData,
       },
+      visits: patientData.visits || [],
+      medicines: patientData.medicines || [],
+      labReports: patientData.labReports || [],
+      hospitalHistory: patientData.hospitalHistory || [],
+    };
+
+    console.log("✅ Returning patient record:", foundDoc.id);
+    return NextResponse.json({
+      success: true,
+      ...patientRecord,
     });
   } catch (error) {
-    console.error("Patient lookup failed:", error);
+    console.error("❌ [GET /api/patients] Error:", error);
     return NextResponse.json(
       {
         success: false,
-        error: "Failed to lookup patient.",
+        error: "Failed to lookup patient: " + String(error),
       },
       { status: 500 }
     );
