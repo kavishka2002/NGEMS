@@ -1,12 +1,36 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { LogOut, Menu, X, Home } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Logo from "@/components/Logo";
 
 export default function LaboratoryNavbar() {
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
+  const [userName, setUserName] = useState("Laboratory User");
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const stored = window.localStorage.getItem("ngemsLaboratorySession");
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        setUserName(parsed.role || "Laboratory User");
+      } catch {
+        setUserName("Laboratory User");
+      }
+    }
+  }, []);
+
+  const handleLogout = () => {
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem("ngemsLaboratorySession");
+      document.cookie = "ngemsLaboratorySession=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    }
+    router.push("/laboratory/login");
+  };
 
   return (
     <nav className="sticky top-0 z-30 border-b border-slate-200 bg-white shadow-md backdrop-blur-sm bg-white/95">
@@ -50,7 +74,13 @@ export default function LaboratoryNavbar() {
             </Link>
           </div>
 
-          <button className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-seal-600 to-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:shadow-lg hover:from-seal-700 hover:to-blue-700 transition duration-200">
+          <div className="hidden items-center gap-2 rounded-full bg-slate-100 px-3 py-2 text-sm text-navy/80 sm:flex">
+            <span className="font-medium">{userName}</span>
+          </div>
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-seal-600 to-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:shadow-lg hover:from-seal-700 hover:to-blue-700 transition duration-200"
+          >
             <LogOut size={16} />
             <span className="hidden sm:inline">Logout</span>
           </button>

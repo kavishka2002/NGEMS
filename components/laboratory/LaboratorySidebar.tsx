@@ -19,6 +19,8 @@ const sections = [
     label: "Main",
     items: [
       { name: "Dashboard", href: "/laboratory/dashboard", icon: LayoutDashboard },
+      { name: "Result Entry", href: "/laboratory/results", icon: FileText },
+      { name: "Verification", href: "/laboratory/verification", icon: FileCheck },
     ],
   },
   {

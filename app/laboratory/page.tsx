@@ -1,20 +1,33 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
-import Logo from "@/components/Logo";
-import FormCard from "@/components/FormCard";
 import Button from "@/components/Button";
 import { FlaskConical } from "lucide-react";
 
 export default function LaboratoryPage() {
   const router = useRouter();
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const stored = window.localStorage.getItem("ngemsLaboratorySession");
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        if (parsed?.authenticated) {
+          router.replace("/laboratory/dashboard");
+        }
+      } catch {
+        router.replace("/laboratory/login");
+      }
+    }
+  }, [router]);
+
   const handleLaboratoryAccess = (e: FormEvent) => {
     e.preventDefault();
-    router.push("/laboratory/dashboard");
+    router.push("/laboratory/login");
   };
 
   return (
