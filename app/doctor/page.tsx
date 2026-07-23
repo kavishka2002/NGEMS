@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 "use client";
 
 import Link from "next/link";
@@ -116,4 +117,10 @@ export default function DoctorPage() {
       </main>
     </div>
   );
+=======
+import { redirect } from "next/navigation";
+
+export default function DoctorPage() {
+  redirect("/doctor/dashboard");
+>>>>>>> Developer
 }

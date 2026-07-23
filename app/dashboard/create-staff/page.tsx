@@ -248,15 +248,34 @@ export default function CreateStaffPage() {
       const payload = {
         ...form,
         employeeId,
+<<<<<<< HEAD
         hospitalId: hospitalSession.hospitalId,
         hospitalName: hospitalSession.hospitalName,
         photoBase64: photoBase64 || undefined,
         createdBy: hospitalSession.username || "Admin User",
+=======
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+        hospitalId: hospitalSession.hospitalId,
+        hospitalName: hospitalSession.hospitalName,
+        photoBase64,
+        createdBy: hospitalSession.username || "Admin User",
+=======
+>>>>>>> 520c4eed498894a0e26e5ad004fd07202195b9cb
+        hospitalId: "HOS-0001",
+        hospitalName: "National Hospital Colombo",
+        photoBase64: photoBase64 || undefined,
+        createdBy: "Admin User",
+<<<<<<< HEAD
+=======
+>>>>>>> 48d2f13a391d1ee7097dd2f65132fdee24f4ead9
+>>>>>>> 520c4eed498894a0e26e5ad004fd07202195b9cb
+>>>>>>> Developer
       };
 
 
       const response = await createStaffAccount(payload);
-
       if (!response.success) {
         setApiError(response.error || "Failed to create staff account. Please try again.");
         setIsLoading(false);
