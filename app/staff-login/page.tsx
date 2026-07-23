@@ -186,6 +186,7 @@ export default function StaffLoginPage() {
         );
       }
 
+<<<<<<< HEAD
       saveSession({
         hospitalId: data.hospitalId ?? normalizedHospitalId,
         hospitalName: data.hospitalName ?? "NGEMS Hospital",
@@ -200,6 +201,10 @@ export default function StaffLoginPage() {
       });
 
       redirectByRole(data.role);
+=======
+      const redirectPath = data.redirectPath || "/dashboard";
+      router.push(redirectPath);
+>>>>>>> 520c4eed498894a0e26e5ad004fd07202195b9cb
     } catch (error) {
       setFormError(
         error instanceof Error ? error.message : "Unable to sign in."

@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, FormEvent, useMemo, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import DashboardNavbar from "@/components/dashboard/DashboardNavbar";
 import Sidebar from "@/components/dashboard/Sidebar";
@@ -84,6 +84,15 @@ const DEPARTMENTS = [
 const EMPLOYMENT_TYPES = ["Permanent", "Contract", "Temporary"];
 const GENDERS = ["Male", "Female", "Other"];
 
+const SESSION_KEY = "ngemsHospitalSession";
+
+type HospitalSession = {
+  hospitalId?: string;
+  hospitalName?: string;
+  username?: string;
+  role?: string;
+};
+
 const initialFormState = {
   role: "",
   fullName: "",
@@ -124,6 +133,7 @@ export default function CreateStaffPage() {
   const [successOpen, setSuccessOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
+  const [hospitalSession, setHospitalSession] = useState<HospitalSession | null>(null);
 
   const employeeId = useMemo(() => {
     const meta = ROLE_META[form.role];
@@ -197,6 +207,19 @@ export default function CreateStaffPage() {
     return Object.keys(next).length === 0;
   };
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const raw = window.localStorage.getItem(SESSION_KEY);
+    if (!raw) return;
+
+    try {
+      const parsed = JSON.parse(raw) as HospitalSession;
+      setHospitalSession(parsed);
+    } catch {
+      setHospitalSession(null);
+    }
+  }, []);
+
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     if (!validate()) return;
@@ -204,6 +227,11 @@ export default function CreateStaffPage() {
     // Ensure employeeId is valid
     if (employeeId === "Select a role to generate" || !employeeId) {
       setApiError("Please select a valid role to generate an Employee ID.");
+      return;
+    }
+
+    if (!hospitalSession?.hospitalId || !hospitalSession?.hospitalName) {
+      setApiError("Hospital context is missing. Please sign in again to continue.");
       return;
     }
 
@@ -220,11 +248,25 @@ export default function CreateStaffPage() {
       const payload = {
         ...form,
         employeeId,
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+        hospitalId: hospitalSession.hospitalId,
+        hospitalName: hospitalSession.hospitalName,
+        photoBase64,
+        createdBy: hospitalSession.username || "Admin User",
+=======
+>>>>>>> 520c4eed498894a0e26e5ad004fd07202195b9cb
         hospitalId: "HOS-0001",
         hospitalName: "National Hospital Colombo",
         photoBase64: photoBase64 || undefined,
         createdBy: "Admin User",
+<<<<<<< HEAD
+=======
+>>>>>>> 48d2f13a391d1ee7097dd2f65132fdee24f4ead9
+>>>>>>> 520c4eed498894a0e26e5ad004fd07202195b9cb
       };
+
 
       const response = await createStaffAccount(payload);
       if (!response.success) {
@@ -788,7 +830,7 @@ export default function CreateStaffPage() {
                       <label className="field-label">Hospital</label>
                       <div className="flex items-center justify-between gap-2 rounded-lg border border-slate-150 bg-slate-50 px-3.5 py-2.5">
                         <div className="flex items-center gap-2 text-sm font-medium text-navy-700">
-                          <Building2 size={14} className="text-navy-300" /> National Hospital Colombo
+                          <Building2 size={14} className="text-navy-300" /> {hospitalSession?.hospitalName || "National Hospital Colombo"}
                         </div>
                         <Lock size={13} className="text-navy-300" />
                       </div>
@@ -797,7 +839,7 @@ export default function CreateStaffPage() {
                     <div>
                       <label className="field-label">Hospital ID</label>
                       <div className="flex items-center justify-between gap-2 rounded-lg border border-slate-150 bg-slate-50 px-3.5 py-2.5">
-                        <span className="text-sm font-medium text-navy-700">HOS-0001</span>
+                        <span className="text-sm font-medium text-navy-700">{hospitalSession?.hospitalId || "HOS-0001"}</span>
                         <Lock size={13} className="text-navy-300" />
                       </div>
                     </div>
@@ -908,8 +950,12 @@ export default function CreateStaffPage() {
                         <Building2 size={22} />
                       </span>
                       <div>
-                        <p className="font-display text-sm font-semibold leading-tight text-white">National Hospital Colombo</p>
-                        <p className="mt-0.5 font-mono text-[11px] tracking-wide text-white/50">HOS-0001</p>
+                        <p className="font-display text-sm font-semibold leading-tight text-white">
+                          {hospitalSession?.hospitalName || "Hospital"}
+                        </p>
+                        <p className="mt-0.5 font-mono text-[11px] tracking-wide text-white/50">
+                          {hospitalSession?.hospitalId || "Unknown ID"}
+                        </p>
                       </div>
                     </div>
                   </div>

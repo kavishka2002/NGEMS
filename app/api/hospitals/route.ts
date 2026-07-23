@@ -3,86 +3,92 @@ import { getFirestoreClient } from "@/lib/firebaseAdmin";
 
 export const runtime = "nodejs";
 
-function parseRequestBody(request: Request) {
-  return (async (): Promise<Record<string, unknown>> => {
-    const contentType = request.headers.get("content-type") ?? "";
+async function parseRequestBody(
+  request: Request
+): Promise<Record<string, unknown>> {
+  const contentType = request.headers.get("content-type") ?? "";
 
-    // Handle multipart/form-data
-    if (contentType.includes("multipart/form-data")) {
-      const formData = await request.formData();
-      return Object.fromEntries(formData.entries()) as Record<string, unknown>;
+  // Handle multipart form-data
+  if (contentType.includes("multipart/form-data")) {
+    const formData = await request.formData();
+    return Object.fromEntries(
+      formData.entries()
+    ) as Record<string, unknown>;
+  }
+
+  // Read body once
+  const text = await request.text();
+
+  try {
+    console.debug("[api/hospitals] content-type:", contentType);
+    console.debug("[api/hospitals] body length:", text.length);
+  } catch {}
+
+  if (!text) {
+    return {};
+  }
+
+  // Try JSON
+  try {
+    const parsed = JSON.parse(text);
+
+    if (
+      parsed &&
+      typeof parsed === "object" &&
+      !Array.isArray(parsed)
+    ) {
+      return parsed as Record<string, unknown>;
     }
+  } catch {}
 
-    // Read body as text
-    const text = await request.text();
+  // Try JS object literal
+  try {
+    const candidate = text
+      .replace(
+        /([,{]\s*)([A-Za-z0-9_]+)\s*:/g,
+        '$1"$2":'
+      )
+      .replace(
+        /:\s*([^",\[\{\]\d\-\s][^,}\]]*)(?=[,}])/g,
+        ':"$1"'
+      );
 
-    if (!text) {
-      return {};
+    const parsed = JSON.parse(candidate);
+
+    if (
+      parsed &&
+      typeof parsed === "object" &&
+      !Array.isArray(parsed)
+    ) {
+      return parsed as Record<string, unknown>;
     }
+  } catch {}
 
-    // Try parsing normal JSON
-    try {
-      const parsed = JSON.parse(text);
-
-      if (
-        parsed &&
-        typeof parsed === "object" &&
-        !Array.isArray(parsed)
-      ) {
-        return parsed as Record<string, unknown>;
-      }
-    } catch (error) {
-      // Continue with fallback parsing
-    }
-
-    // Try parsing JS-style object literals
-    try {
-      const candidate = text
-        .replace(
-          /([,{]\s*)([A-Za-z0-9_]+)\s*:/g,
-          '$1"$2":'
-        )
-        .replace(
-          /:\s*([^",\[{\]\d\-\s][^,}\]]*)(?=[,}])/g,
-          ':"$1"'
-        );
-
-      const parsed = JSON.parse(candidate);
-
-      if (
-        parsed &&
-        typeof parsed === "object" &&
-        !Array.isArray(parsed)
-      ) {
-        return parsed as Record<string, unknown>;
-      }
-    } catch (error) {
-      // Continue with URL encoded parsing
-    }
-
-    // Try parsing URL encoded data
-    try {
-      return Object.fromEntries(
-        new URLSearchParams(text)
-      ) as Record<string, unknown>;
-    } catch (error) {
-      return {};
-    }
-  })();
+  // Try URL encoded
+  try {
+    return Object.fromEntries(
+      new URLSearchParams(text)
+    ) as Record<string, unknown>;
+  } catch {
+    return {};
+  }
 }
 
-// GET - Find hospital by Hospital ID
+// GET - Search hospitals
 export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
-    const hospitalId = (
-      url.searchParams.get("hospitalId") ?? ""
-    ).trim();
 
-    if (!hospitalId) {
+    const hospitalId =
+      (url.searchParams.get("hospitalId") ?? "").trim();
+
+    const hospitalName =
+      (url.searchParams.get("hospitalName") ?? "").trim();
+
+    if (!hospitalId && !hospitalName) {
       return NextResponse.json(
         {
-          error: "Hospital ID is required.",
+          error: "hospitalId or hospitalName is required.",
         },
         {
           status: 400,
@@ -90,41 +96,49 @@ export async function GET(request: Request) {
       );
     }
 
-    try {
-      const firestore = getFirestoreClient();
+    const firestore = getFirestoreClient();
 
-      const querySnapshot = await firestore
-        .collection("hospitals")
-        .where("hospitalId", "==", hospitalId)
-        .limit(1)
-        .get();
+    let query: FirebaseFirestore.Query =
+      firestore.collection("hospitals");
 
-      if (!querySnapshot.empty) {
-        return NextResponse.json({
-          success: true,
-          hospital: querySnapshot.docs[0].data(),
-        });
-      }
-    } catch (firestoreError) {
-      console.error(
-        "Firestore hospital lookup failed:",
-        firestoreError
+    if (hospitalId) {
+      query = query.where(
+        "hospitalId",
+        "==",
+        hospitalId
       );
     }
 
-    return NextResponse.json(
-      {
-        error: "Hospital not found.",
-      },
-      {
-        status: 404,
-      }
-    );
+    if (hospitalName) {
+      query = query.where(
+        "hospitalName",
+        "==",
+        hospitalName
+      );
+    }
+
+    const snapshot = await query.limit(20).get();
+
+    if (snapshot.empty) {
+      return NextResponse.json(
+        {
+          error: "Hospital not found.",
+        },
+        {
+          status: 404,
+        }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      hospitals: snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      })),
+    });
   } catch (error) {
-    console.error(
-      "Hospital lookup failed:",
-      error
-    );
+    console.error("Hospital lookup failed:", error);
 
     return NextResponse.json(
       {
@@ -137,12 +151,12 @@ export async function GET(request: Request) {
   }
 }
 
-// POST - Register a new hospital
+// POST - Register hospital
 export async function POST(request: Request) {
   try {
     const body = await parseRequestBody(request);
 
-    if (!body?.hospitalId || !body?.hospitalName) {
+    if (!body.hospitalId || !body.hospitalName) {
       return NextResponse.json(
         {
           error:
@@ -173,9 +187,9 @@ export async function POST(request: Request) {
         body.createdAt || new Date().toISOString(),
     };
 
-    try {
-      const firestore = getFirestoreClient();
+    const firestore = getFirestoreClient();
 
+    try {
       const docRef = await firestore
         .collection("hospitals")
         .add(record);
@@ -217,4 +231,4 @@ export async function POST(request: Request) {
       }
     );
   }
-}
+} 
