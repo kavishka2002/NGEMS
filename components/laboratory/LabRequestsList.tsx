@@ -1,56 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronDown, Eye, CheckCircle2, Clock, AlertCircle } from "lucide-react";
 import Button from "@/components/Button";
 
 interface LabRequest {
   id: string;
+  requestId: string;
   patientName: string;
   patientId: string;
-  doctorName: string;
-  testType: string;
-  tests: string[];
-  dateRequested: string;
-  status: "pending" | "collected" | "processing" | "completed";
-  priority: "normal" | "urgent";
+  doctor: string;
+  test: string;
+  priority: string;
+  requestDate: string;
+  status: string;
 }
-
-const mockLabRequests: LabRequest[] = [
-  {
-    id: "LAB001",
-    patientName: "John Doe",
-    patientId: "P001",
-    doctorName: "Dr. Smith",
-    testType: "Blood Work",
-    tests: ["Complete Blood Count (CBC)", "Blood Sugar", "Liver Function Tests"],
-    dateRequested: "2026-07-10",
-    status: "pending",
-    priority: "normal",
-  },
-  {
-    id: "LAB002",
-    patientName: "Jane Smith",
-    patientId: "P002",
-    doctorName: "Dr. Johnson",
-    testType: "Urine Test",
-    tests: ["Urinalysis", "Urine Culture"],
-    dateRequested: "2026-07-09",
-    status: "collected",
-    priority: "urgent",
-  },
-  {
-    id: "LAB003",
-    patientName: "Robert Wilson",
-    patientId: "P003",
-    doctorName: "Dr. Brown",
-    testType: "COVID-19 Test",
-    tests: ["RT-PCR Test"],
-    dateRequested: "2026-07-08",
-    status: "completed",
-    priority: "normal",
-  },
-];
 
 function clsx(...classes: any[]) {
   return classes.filter(Boolean).join(" ");
@@ -58,12 +22,33 @@ function clsx(...classes: any[]) {
 
 export default function LabRequestsList() {
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [requests, setRequests] = useState<LabRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const session = window.localStorage.getItem("ngemsLaboratorySession");
+    if (!session) {
+      setLoading(false);
+      return;
+    }
+
+    const parsed = JSON.parse(session);
+    fetch(`/api/laboratory/dashboard?hospitalId=${parsed.hospitalId || ""}`)
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.success) {
+          setRequests(data.recentRequests || []);
+        }
+      })
+      .finally(() => setLoading(false));
+  }, []);
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case "pending":
         return "bg-amber-50 text-amber-700 border-amber-200";
-      case "collected":
+      case "accepted":
         return "bg-blue-50 text-blue-700 border-blue-200";
       case "processing":
         return "bg-purple-50 text-purple-700 border-purple-200";
@@ -78,7 +63,7 @@ export default function LabRequestsList() {
     switch (status) {
       case "pending":
         return <Clock size={14} />;
-      case "collected":
+      case "accepted":
         return <AlertCircle size={14} />;
       case "processing":
         return <Eye size={14} />;
@@ -95,9 +80,13 @@ export default function LabRequestsList() {
       : "bg-gray-50 text-gray-700 border-gray-200";
   };
 
+  if (loading) {
+    return <div className="space-y-3">{Array.from({ length: 3 }).map((_, index) => <div key={index} className="h-20 animate-pulse rounded-lg bg-slate-100" />)}</div>;
+  }
+
   return (
     <div className="space-y-3">
-      {mockLabRequests.map((request) => (
+      {requests.map((request) => (
         <div
           key={request.id}
           className="rounded-lg border border-slate-border bg-white shadow-sm transition-all hover:shadow-card"
@@ -146,31 +135,28 @@ export default function LabRequestsList() {
             <div className="border-t border-slate-border px-6 py-4 bg-slate-50">
               <div className="mb-4">
                 <p className="text-xs font-semibold uppercase tracking-wider text-navy/50 mb-2">
-                  Tests Requested
+                  Request Details
                 </p>
-                <ul className="space-y-2">
-                  {request.tests.map((test, idx) => (
-                    <li key={idx} className="flex items-center gap-2 text-sm text-navy">
-                      <span className="h-1.5 w-1.5 rounded-full bg-seal-600" />
-                      {test}
-                    </li>
-                  ))}
-                </ul>
+                <div className="space-y-1 text-sm text-navy">
+                  <p>Request ID: {request.requestId}</p>
+                  <p>Priority: {request.priority}</p>
+                  <p>Requested: {request.requestDate}</p>
+                </div>
               </div>
               <div className="flex gap-2">
-                {request.status === "pending" && (
+                {request.status === "Pending" && (
                   <Button type="button" variant="primary" className="px-4 py-2 text-sm">
-                    Collect Sample
+                    Accept Request
                   </Button>
                 )}
-                {request.status === "collected" && (
+                {request.status === "Accepted" && (
                   <Button type="button" variant="primary" className="px-4 py-2 text-sm">
                     Start Processing
                   </Button>
                 )}
-                {request.status === "processing" && (
+                {request.status === "Processing" && (
                   <Button type="button" variant="primary" className="px-4 py-2 text-sm">
-                    Upload Results
+                    Enter Result
                   </Button>
                 )}
                 <Button type="button" variant="secondary" className="px-4 py-2 text-sm">
