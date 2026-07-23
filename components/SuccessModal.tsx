@@ -9,7 +9,7 @@ type SuccessModalProps = {
   onClose: () => void;
 };
 
-export default function SuccessModal({
+export default function SuccessModal({ 
   open,
   hospitalId,
   hospitalName,

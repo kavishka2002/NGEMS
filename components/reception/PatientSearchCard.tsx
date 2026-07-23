@@ -41,16 +41,23 @@ export default function PatientSearchCard({ onResult }: PatientSearchCardProps) 
 
       const params = new URLSearchParams({ hospitalId, query: query.trim() });
       if (searchBy) params.set("searchBy", searchBy);
+
+      console.log("🔍 Searching for patient:", { hospitalId, searchBy, query: query.trim() });
+
       const response = await fetch(`/api/patients?${params.toString()}`);
       const payload = await response.json();
 
+      console.log("📋 Search response:", { status: response.status, payload });
+
       if (!response.ok) {
-        setError(payload?.error || "Patient search failed.");
+        const errorMsg = payload?.error || "Patient search failed.";
+        console.error("❌ Patient search error:", errorMsg);
+        setError(errorMsg);
         onResult(null, true);
         return;
       }
 
-      onResult(payload.patient as PatientRecord, true);
+      onResult(payload, true);
     } catch (error) {
       console.error("Patient search failed", error);
       setError("Patient search failed. Try again later.");

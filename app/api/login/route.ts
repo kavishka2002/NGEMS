@@ -88,7 +88,8 @@ function getRedirectPath(role: string) {
   if (normalized.includes("reception")) return "/dashboard/reception";
   if (normalized.includes("pharmacy")) return "/pharmacy/dashboard";
   if (normalized.includes("laboratory")) return "/laboratory/dashboard";
-  if (normalized.includes("doctor") || normalized.includes("nurse")) return "/dashboard";
+  if (normalized.includes("doctor")) return "/doctor";
+  if (normalized.includes("nurse")) return "/dashboard";
   if (normalized.includes("administrator") || normalized.includes("admin") || normalized.includes("hospital user")) return "/dashboard";
   return "/dashboard";
 }
@@ -100,9 +101,53 @@ export async function POST(request: Request) {
     const username = normalizeString(body.username);
     const password = normalizeString(body.password);
 
-    if (!hospitalId || !username || !password) {
+    if (!username || !password) {
       return NextResponse.json(
-        { error: "Hospital ID, username, and password are required." },
+        { error: "Username and password are required." },
+        { status: 400 }
+      );
+    }
+
+    // First try doctor authentication using only username/password
+    try {
+      const firestore = getFirestoreClient();
+
+      // Check legacy doctor records by username, then verify the password in code.
+      const doctorQuery = await firestore
+        .collection("doctors")
+        .where("username", "==", username)
+        .limit(1)
+        .get();
+
+      if (doctorQuery && !doctorQuery.empty) {
+        const doctorRecord = doctorQuery.docs[0].data();
+        if (normalizeString(doctorRecord.password) !== password) {
+          return NextResponse.json({ error: "Invalid credentials." }, { status: 401 });
+        }
+        const doctorHospitalId = normalizeString(doctorRecord.hospitalId) || hospitalId;
+
+        return NextResponse.json({
+          success: true,
+          hospitalId: doctorHospitalId,
+          hospitalName: normalizeString(doctorRecord.hospitalName) || normalizeString(doctorRecord.hospital) || "Your hospital",
+          hospitalType: normalizeString(doctorRecord.hospitalType) || "",
+          province: normalizeString(doctorRecord.province) || "",
+          district: normalizeString(doctorRecord.district) || "",
+          address: normalizeString(doctorRecord.address) || "",
+          contactNumber: normalizeString(doctorRecord.contactNumber) || "",
+          email: normalizeString(doctorRecord.email) || "",
+          username,
+          role: normalizeString(doctorRecord.role) || "Doctor",
+        });
+      }
+    } catch (docLookupError) {
+      console.error("Firestore doctor lookup failed", docLookupError);
+    }
+
+    // Fallback: require hospitalId for hospital admin/staff login
+    if (!hospitalId) {
+      return NextResponse.json(
+        { error: "Hospital ID is required for hospital/staff login." },
         { status: 400 }
       );
     }
@@ -138,12 +183,14 @@ export async function POST(request: Request) {
         const staffSnapshot = await firestore
           .collection("staff")
           .where("hospitalId", "==", hospitalId)
-          .where("username", "==", username)
-          .limit(1)
+          .limit(200)
           .get();
 
-        if (staffSnapshot && !staffSnapshot.empty) {
-          const staffData = staffSnapshot.docs[0].data();
+        const staffDoc = staffSnapshot.docs.find(
+          (doc) => normalizeCredential(doc.data().username) === normalizeCredential(username)
+        );
+        if (staffDoc) {
+          const staffData = staffDoc.data();
           userRecord = staffData;
           foundInStaff = true;
         }

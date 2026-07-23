@@ -256,7 +256,6 @@ export default function CreateStaffPage() {
 
 
       const response = await createStaffAccount(payload);
-
       if (!response.success) {
         setApiError(response.error || "Failed to create staff account. Please try again.");
         setIsLoading(false);

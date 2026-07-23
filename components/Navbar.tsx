@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Logo from "./Logo";
 
-export default function Navbar() {
+export default function Navbar() { 
   const pathname = usePathname();
 
   const linkClass = (href: string) =>

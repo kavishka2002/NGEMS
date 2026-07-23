@@ -15,7 +15,7 @@ export default function Button({
   variant = "primary",
   loading = false,
   fullWidth = true,
-  disabled,
+  disabled ,
   className = "",
   icon: Icon,
   ...props
