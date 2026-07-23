@@ -8,7 +8,6 @@ import Logo from "@/components/Logo";
 import Input from "@/components/Input";
 import PasswordInput from "@/components/PasswordInput";
 import Button from "@/components/Button";
-import { validateDemoAccount } from "@/lib/demo-accounts";
 
 type FormState = {
   hospitalId: string;
@@ -46,37 +45,6 @@ export default function StaffLoginPage() {
     }
 
     try {
-      const demoCheck = validateDemoAccount(form.hospitalId, form.username, form.password);
-      if (demoCheck.valid) {
-        const role = demoCheck.role || "Staff";
-
-        if (typeof window !== "undefined") {
-          window.localStorage.setItem(
-            "ngemsHospitalSession",
-            JSON.stringify({
-              hospitalId: form.hospitalId,
-              hospitalName: "NGEMS Hospital",
-              username: form.username,
-              role,
-            })
-          );
-        }
-
-        if (role.toLowerCase().includes("doctor")) {
-          router.push("/doctor");
-        } else if (role.toLowerCase().includes("reception")) {
-          router.push("/dashboard/reception");
-        } else if (role.toLowerCase().includes("pharmacy")) {
-          router.push("/pharmacy");
-        } else if (role.toLowerCase().includes("laboratory")) {
-          router.push("/laboratory");
-        } else {
-          router.push("/dashboard");
-        }
-
-        return;
-      }
-
       const response = await fetch("/api/login", {
         method: "POST",
         headers: {

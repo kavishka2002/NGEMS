@@ -1,41 +1,51 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Pill, TrendingUp, AlertTriangle, CheckCircle2 } from "lucide-react";
 import PharmacyCard from "./PharmacyCard";
+import * as service from "@/lib/pharmacy-service";
 
 export default function PharmacyDashboardStats() {
+  const [summary, setSummary] = useState<service.PharmacyDashboardSummary | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    service.getDashboardSummary().then((data) => { if (mounted) setSummary(data); }).catch((error) => console.error("Failed to load pharmacy dashboard", error));
+    return () => { mounted = false; };
+  }, []);
+
   const stats = [
     {
       key: "prescriptions",
       label: "Pending Prescriptions",
-      value: 24,
+      value: summary?.pendingPrescriptions ?? 0,
       description: "Awaiting dispensing",
       icon: Pill,
-      trend: "+5 today",
+      trend: "Awaiting dispensing",
     },
     {
       key: "dispensing",
       label: "Dispensed Today",
-      value: 45,
+      value: summary?.dispensedToday ?? 0,
       description: "Medicines distributed",
       icon: CheckCircle2,
-      trend: "+12 from yesterday",
+      trend: "Recorded today",
     },
     {
       key: "inventory",
       label: "Total Medicines",
-      value: 1230,
+      value: summary?.totalMedicines ?? 0,
       description: "Active inventory items",
       icon: TrendingUp,
-      trend: "4 items expired",
+      trend: `${summary?.expiredMedicines ?? 0} items expired`,
     },
     {
       key: "stock",
       label: "Low Stock Alerts",
-      value: 8,
+      value: summary?.lowStockAlerts ?? 0,
       description: "Medicines below minimum",
       icon: AlertTriangle,
-      trend: "Urgent action needed",
+      trend: "Below minimum stock",
     },
   ];
 

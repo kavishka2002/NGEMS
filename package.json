@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "seed": "node ./scripts/seedFirestore.js",
+    "clear-demo": "node ./scripts/clearDemoData.js",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
